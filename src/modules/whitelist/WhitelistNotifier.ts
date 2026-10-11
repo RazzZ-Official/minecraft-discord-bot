@@ -5,7 +5,7 @@ import { editionName } from '../../shared/format.js'
 import { WhitelistText } from './messages.js'
 import { PlayerName } from './PlayerName.js'
 import type { WhitelistEntry } from './PlayerName.js'
-import type { WhitelistRequest } from './WhitelistRequestModel.js'
+import type { WhitelistRequest } from './WhitelistRequest.js'
 import type { WhitelistViews } from './WhitelistViews.js'
 
 const text = WhitelistText.embeds

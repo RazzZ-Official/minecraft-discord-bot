@@ -2,8 +2,7 @@ import { DiscordAPIError, RESTJSONErrorCodes } from 'discord.js'
 import type { Client, Message } from 'discord.js'
 import type { Logger } from '../../core/Logger.js'
 import type { StatusCardService } from './StatusCardService.js'
-import { StatusMessageModel } from './StatusMessageModel.js'
-import type { StatusMessage } from './StatusMessageModel.js'
+import type { StatusMessage, StatusMessageRepository } from './StatusMessageRepository.js'
 
 // Errors meaning the status message is gone for good, so it is forgotten instead of retried.
 const GONE_ERROR_CODES: readonly number[] = [
@@ -15,18 +14,18 @@ const GONE_ERROR_CODES: readonly number[] = [
 /** Edits every saved status message with the latest status. */
 export class StatusCardUpdater {
   constructor(
+    private readonly messages: StatusMessageRepository,
     private readonly service: StatusCardService,
     private readonly logger: Logger
   ) {}
 
   async updateAll(client: Client<true>): Promise<void> {
-    const saved = await StatusMessageModel.find().lean()
-    for (const entry of saved) {
+    for (const entry of [...this.messages.all()]) {
       try {
         await this.update(client, entry)
       } catch (error) {
         if (error instanceof DiscordAPIError && GONE_ERROR_CODES.includes(Number(error.code))) {
-          await StatusMessageModel.deleteOne({ messageId: entry.messageId })
+          await this.messages.remove(entry.messageId)
           this.logger.warn(`Status message ${entry.messageId} no longer exists and was removed.`)
         } else {
           this.logger.error(`Could not update status message ${entry.messageId}.`, error)

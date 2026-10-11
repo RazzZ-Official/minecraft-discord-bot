@@ -5,7 +5,7 @@ import { PlayerName } from './PlayerName.js'
 import type { WhitelistEntry } from './PlayerName.js'
 import type { WhitelistGateway } from './WhitelistGateway.js'
 import type { WhitelistNotifier } from './WhitelistNotifier.js'
-import type { WhitelistRequest } from './WhitelistRequestModel.js'
+import type { WhitelistRequest } from './WhitelistRequest.js'
 import { DuplicatePendingRequestError } from './WhitelistRequestRepository.js'
 import type { WhitelistRequestRepository } from './WhitelistRequestRepository.js'
 
@@ -56,9 +56,9 @@ export class WhitelistService {
     })
     if (alreadyWhitelisted) return { kind: 'already-whitelisted', whitelistName: player.whitelistName }
 
-    const ownPending = await this.requests.findPendingByUser(user.id)
+    const ownPending = this.requests.findPendingByUser(user.id)
     if (ownPending) return { kind: 'already-pending', whitelistName: ownPending.whitelistName }
-    if (await this.requests.findPendingByName(player.whitelistName)) {
+    if (this.requests.findPendingByName(player.whitelistName)) {
       return { kind: 'name-pending', whitelistName: player.whitelistName }
     }
 
@@ -82,8 +82,8 @@ export class WhitelistService {
   }
 
   /** Checks whether a request can be decided right now. */
-  async inspect(requestId: string): Promise<ReviewStart> {
-    const request = await this.requests.findById(requestId)
+  inspect(requestId: string): ReviewStart {
+    const request = this.requests.findById(requestId)
     if (!request) return { kind: 'not-found' }
     if (request.status !== 'pending') return { kind: 'already-handled', request }
     if (this.reviewing.has(requestId)) return { kind: 'in-progress' }
@@ -91,8 +91,8 @@ export class WhitelistService {
   }
 
   /** Like inspect, and also reserves the request. Call endReview afterwards, also when the review fails. */
-  async beginReview(requestId: string): Promise<ReviewStart> {
-    const start = await this.inspect(requestId)
+  beginReview(requestId: string): ReviewStart {
+    const start = this.inspect(requestId)
     if (start.kind === 'ok') this.reviewing.add(requestId)
     return start
   }
@@ -156,7 +156,7 @@ export class WhitelistService {
     decision: { status: 'approved' | 'rejected'; reason?: string | null }
   ): Promise<DecisionResult> {
     const decided = await this.requests.decide(requestId, { ...decision, decidedBy: staff.id })
-    if (!decided) return { kind: 'already-handled', request: await this.requests.findById(requestId) }
+    if (!decided) return { kind: 'already-handled', request: this.requests.findById(requestId) }
 
     const notified = await this.notifier.notifyPlayer(client, decided)
     await this.requests.setNotified(requestId, notified)

@@ -18,7 +18,7 @@ import { editionName, fill } from '../../shared/format.js'
 import { WhitelistIds, WhitelistText } from './messages.js'
 import { PlayerName } from './PlayerName.js'
 import type { WhitelistEntry } from './PlayerName.js'
-import type { WhitelistRequest } from './WhitelistRequestModel.js'
+import type { WhitelistRequest } from './WhitelistRequest.js'
 
 const text = WhitelistText.embeds
 const STATUS_COLORS = { pending: 'Yellow', processing: 'Orange', approved: 'Green', rejected: 'Red' } as const
@@ -55,7 +55,7 @@ export class WhitelistViews {
         { name: text.status, value: this.statusText(request, processing), inline: true }
       )
       .setFooter({ text: `ID: ${request.requestId}` })
-      .setTimestamp(request.createdAt)
+      .setTimestamp(new Date(request.createdAt))
     if (request.status === 'rejected') embed.addFields({ name: text.reason, value: request.reason ?? text.noReason })
     if (request.status !== 'pending') return { embeds: [embed], components: [] }
 

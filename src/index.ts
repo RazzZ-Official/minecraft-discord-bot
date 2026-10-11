@@ -3,7 +3,7 @@ import { loadEnv } from './config/env.js'
 import type { AppContext } from './core/AppContext.js'
 import { Bot } from './core/Bot.js'
 import { CommandRegistry } from './core/commands/CommandRegistry.js'
-import { Database } from './core/Database.js'
+import { JsonStore } from './core/JsonStore.js'
 import { Logger } from './core/Logger.js'
 import { AutoReplyModule } from './modules/auto-reply/AutoReplyModule.js'
 import { GeneralModule } from './modules/general/GeneralModule.js'
@@ -36,9 +36,6 @@ const main = async (): Promise<void> => {
     )
   }
 
-  const database = new Database(env.MONGODB_URI, logger.child('database'))
-  await database.connect()
-
   const registry = new CommandRegistry()
   // Modules are listed in /help in this order.
   const bot = new Bot(context, registry, [
@@ -56,7 +53,7 @@ const main = async (): Promise<void> => {
   const shutdown = async (signal: string): Promise<void> => {
     logger.info(`${signal} received, shutting down.`)
     await bot.stop()
-    await database.disconnect()
+    await JsonStore.flushAll()
     process.exit(0)
   }
   process.once('SIGINT', () => void shutdown('SIGINT'))

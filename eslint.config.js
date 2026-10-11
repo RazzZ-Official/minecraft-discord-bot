@@ -2,7 +2,7 @@ import eslint from '@eslint/js'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist/', 'node_modules/', 'data-backup/'] },
+  { ignores: ['dist/', 'node_modules/', 'datas/'] },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {

@@ -7,7 +7,7 @@ import type { AuditLog } from '../../services/AuditLog.js'
 import { fill } from '../../shared/format.js'
 import { Mention } from '../../shared/Mention.js'
 import type { StatusCardService } from './StatusCardService.js'
-import { StatusMessageModel } from './StatusMessageModel.js'
+import type { StatusMessageRepository } from './StatusMessageRepository.js'
 
 const Text = {
   description: 'Sets a live status message of the Minecraft server in this channel.',
@@ -27,6 +27,7 @@ export class SetStatusCommand extends SlashCommand {
 
   constructor(
     private readonly config: BotConfig,
+    private readonly messages: StatusMessageRepository,
     private readonly service: StatusCardService,
     private readonly audit: AuditLog
   ) {
@@ -76,7 +77,7 @@ export class SetStatusCommand extends SlashCommand {
       content: `${mention.text} ${Text.checking}`.trim(),
       allowedMentions: mention.allowedMentions,
     })
-    await StatusMessageModel.create({
+    await this.messages.add({
       ...target,
       messageId: message.id,
       channelId: message.channelId,

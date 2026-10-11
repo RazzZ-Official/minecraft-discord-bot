@@ -5,17 +5,18 @@ import { BotModule } from '../../core/BotModule.js'
 import { IntervalTask } from '../../core/IntervalTask.js'
 import type { Logger } from '../../core/Logger.js'
 import { fill } from '../../shared/format.js'
-import { PlayerCountChannelModel } from './PlayerCountChannelModel.js'
+import { PlayerCountChannelRepository } from './PlayerCountChannelRepository.js'
 
 const UPDATE_INTERVAL_MS = 60_000
 
 /**
- * Keeps a voice channel's name set to the player count. Uses the channel from the config, the one saved in the
- * database, or creates a new one.
+ * Keeps a voice channel's name set to the player count. Uses the channel from the config, the one saved in
+ * datas/player-count-channels.json, or creates a new one.
  */
 export class PlayerCountModule extends BotModule {
   readonly name = 'player-count'
   private readonly logger: Logger
+  private readonly channels = new PlayerCountChannelRepository()
   private task: IntervalTask | undefined
 
   constructor(private readonly context: AppContext) {
@@ -69,8 +70,8 @@ export class PlayerCountModule extends BotModule {
       return channel
     }
 
-    const saved = await PlayerCountChannelModel.findOne({ guildId: guild.id }).lean()
-    const existing = saved ? await this.fetchVoiceChannel(guild, saved.channelId) : null
+    const savedId = this.channels.channelFor(guild.id)
+    const existing = savedId ? await this.fetchVoiceChannel(guild, savedId) : null
     if (existing) return existing
 
     const created = await guild.channels.create({
@@ -88,7 +89,7 @@ export class PlayerCountModule extends BotModule {
     return channel?.isVoiceBased() ? channel : null
   }
 
-  private async save(guildId: string, channelId: string): Promise<void> {
-    await PlayerCountChannelModel.updateOne({ guildId }, { channelId }, { upsert: true })
+  private save(guildId: string, channelId: string): Promise<void> {
+    return this.channels.save(guildId, channelId)
   }
 }

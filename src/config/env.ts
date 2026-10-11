@@ -4,7 +4,6 @@ import { z } from 'zod'
 // Secrets and machine-specific settings, read from the .env file. See .env.example.
 const envSchema = z.object({
   BOT_TOKEN: z.string().min(1, 'BOT_TOKEN is required'),
-  MONGODB_URI: z.string().min(1).default('mongodb://127.0.0.1:27017/razzz-bot'),
   PTERO_PANEL_URL: z.url().optional(),
   PTERO_SERVER_ID: z.string().min(1).optional(),
   PTERO_API_KEY: z.string().min(1).optional(),

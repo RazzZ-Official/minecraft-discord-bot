@@ -8,6 +8,7 @@ import { SetStatusCommand } from './SetStatusCommand.js'
 import { StatusCardService } from './StatusCardService.js'
 import { StatusCardUpdater } from './StatusCardUpdater.js'
 import { StatusCardView } from './StatusCardView.js'
+import { StatusMessageRepository } from './StatusMessageRepository.js'
 
 /** Live status messages: /setstatus posts one, and the updater edits them all on an interval. */
 export class StatusCardModule extends BotModule {
@@ -20,9 +21,10 @@ export class StatusCardModule extends BotModule {
   constructor(private readonly context: AppContext) {
     super()
     this.logger = context.logger.child(this.name)
+    const messages = new StatusMessageRepository()
     const service = new StatusCardService(context, new StatusCardView(context.config))
-    this.updater = new StatusCardUpdater(service, this.logger)
-    this.setStatus = new SetStatusCommand(context.config, service, context.audit)
+    this.updater = new StatusCardUpdater(messages, service, this.logger)
+    this.setStatus = new SetStatusCommand(context.config, messages, service, context.audit)
   }
 
   override get enabled(): boolean {

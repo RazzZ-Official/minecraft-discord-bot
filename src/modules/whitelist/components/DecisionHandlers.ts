@@ -4,7 +4,7 @@ import { ButtonHandler, ModalHandler } from '../../../core/components/ComponentH
 import { fill } from '../../../shared/format.js'
 import { WhitelistIds, WhitelistText } from '../messages.js'
 import type { StaffGuard } from '../StaffGuard.js'
-import type { WhitelistRequest } from '../WhitelistRequestModel.js'
+import type { WhitelistRequest } from '../WhitelistRequest.js'
 import type { DecisionResult, ReviewStart, WhitelistService } from '../WhitelistService.js'
 import type { WhitelistViews } from '../WhitelistViews.js'
 
@@ -33,7 +33,7 @@ class DecisionFlow {
       await this.reply(interaction, replies.notStaff)
       return null
     }
-    const start = reserve ? await this.deps.service.beginReview(requestId) : await this.deps.service.inspect(requestId)
+    const start = reserve ? this.deps.service.beginReview(requestId) : this.deps.service.inspect(requestId)
     if (start.kind === 'ok') return start.request
     await this.reply(interaction, this.startProblem(start))
     return null
