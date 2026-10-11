@@ -11,7 +11,7 @@ export const WhitelistText = {
     disabled: ':no_entry: Whitelist requests are currently disabled.',
     invalidJava: ':warning: **`{username}` is not a valid Java username. Use 3-16 letters, numbers or underscores.**',
     invalidBedrock:
-      ':warning: **`{username}` is not a valid Bedrock gamertag. Use up to 16 letters, numbers or spaces.**',
+      ':warning: **`{username}` is not a valid Bedrock username. Use up to 16 letters, numbers or spaces.**',
     alreadyWhitelisted: ':white_check_mark: **{username}** is already whitelisted. You can join the server.',
     alreadyPending:
       ':hourglass: You already have a pending request for **{username}**. Please wait for staff to review it.',
@@ -67,7 +67,7 @@ export const WhitelistText = {
   panel: {
     title: '📝 {name} Whitelist',
     description:
-      'Want to play on **{name}**? Request access to the whitelist!\n\n**How it works**\n1. Click **Request Whitelist** below.\n2. Enter your Minecraft username and choose your edition.\n3. Staff review your request, and you get a DM with the decision.\n\n💻 **Java:** enter your Minecraft username.\n📱 **Bedrock:** enter your Xbox gamertag.',
+      'Want to play on **{name}**? Request access to the whitelist!\n\n**How it works**\n1. Click **Request Whitelist** below.\n2. Enter your Minecraft username and choose your edition.\n3. Staff review your request, and you get a DM with the decision.\n\n💻 **Java:** enter your Minecraft username.\n📱 **Bedrock:** enter your Bedrock username.',
     footer: 'Make sure your DMs are open to receive the decision.',
     button: 'Request Whitelist',
   },
@@ -75,7 +75,7 @@ export const WhitelistText = {
     title: 'Whitelist Request',
     info: 'Staff will review your request. You get a DM once it is approved or rejected.',
     usernameLabel: 'Minecraft Username',
-    usernameDescription: 'Java: your username. Bedrock: your Xbox gamertag.',
+    usernameDescription: 'Enter your Java or Bedrock username.',
     usernamePlaceholder: 'eg. Steve',
     editionLabel: 'Edition',
     editionPlaceholder: 'Choose your edition',
