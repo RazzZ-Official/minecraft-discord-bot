@@ -1,23 +1,24 @@
-import { PermissionFlagsBits } from 'discord.js'
 import type { Interaction } from 'discord.js'
 import type { WhitelistConfig } from '../../config/types.js'
+import { RoleGuard } from '../../shared/RoleGuard.js'
 
 /** Decides who counts as whitelist staff. */
 export class StaffGuard {
-  constructor(private readonly config: WhitelistConfig) {}
+  private readonly staff: RoleGuard
+  private readonly reviewers: RoleGuard
+
+  constructor(config: WhitelistConfig) {
+    this.staff = new RoleGuard(config.staffRoleIds)
+    this.reviewers = new RoleGuard(config.staffRoleIds, config.staffChannelId)
+  }
 
   /** Members with a staff role, or Administrators when no staff roles are set. */
   isStaff(interaction: Interaction): boolean {
-    if (!interaction.inGuild()) return false
-    if (!this.config.staffRoleIds.length)
-      return Boolean(interaction.memberPermissions.has(PermissionFlagsBits.Administrator))
-    const { roles } = interaction.member
-    const roleIds = Array.isArray(roles) ? roles : [...roles.cache.keys()]
-    return roleIds.some((roleId) => this.config.staffRoleIds.includes(roleId))
+    return this.staff.hasRole(interaction)
   }
 
   /** Reviewing requests and managing the whitelist is only allowed in the staff channel. */
   canReview(interaction: Interaction): boolean {
-    return interaction.channelId === this.config.staffChannelId && this.isStaff(interaction)
+    return this.reviewers.allows(interaction)
   }
 }

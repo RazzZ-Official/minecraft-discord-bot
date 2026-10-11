@@ -105,36 +105,6 @@ export class WhitelistViews {
     return { embeds: [embed] }
   }
 
-  decisionLog(request: WhitelistRequest): BaseMessageOptions {
-    const embed = new EmbedBuilder()
-      .setColor(STATUS_COLORS[request.status])
-      .setTitle(text.logTitle)
-      .addFields(
-        { name: text.discordUser, value: `<@${request.userId}> (${request.userTag})`, inline: true },
-        { name: text.whitelistName, value: `\`${request.whitelistName}\``, inline: true },
-        { name: text.edition, value: editionName(request.edition), inline: true },
-        { name: text.status, value: this.statusText(request), inline: true },
-        { name: text.playerNotified, value: request.notified ? '✅' : '❌', inline: true }
-      )
-      .setFooter({ text: `ID: ${request.requestId}` })
-      .setTimestamp(request.decidedAt ?? new Date())
-    if (request.status === 'rejected') embed.addFields({ name: text.reason, value: request.reason ?? text.noReason })
-    return { embeds: [embed] }
-  }
-
-  removalLog(entry: WhitelistEntry, staffId: string): BaseMessageOptions {
-    const embed = new EmbedBuilder()
-      .setColor('DarkRed')
-      .setTitle(text.logRemovalTitle)
-      .addFields(
-        { name: text.whitelistName, value: `\`${entry.name}\``, inline: true },
-        { name: text.edition, value: editionName(PlayerName.entryEdition(entry)), inline: true },
-        { name: text.removedBy, value: `<@${staffId}>`, inline: true }
-      )
-      .setTimestamp()
-    return { embeds: [embed] }
-  }
-
   /** The whitelist grouped by edition. */
   listMessage(entries: WhitelistEntry[]): BaseMessageOptions {
     const namesFor = (edition: 'java' | 'bedrock'): string[] =>

@@ -73,7 +73,7 @@ export class WhitelistService {
     }
 
     try {
-      await this.requests.setStaffMessage(request.requestId, await this.notifier.postToStaff(client, request))
+      await this.requests.setStaffMessage(request.requestId, await this.notifier.postToStaff(client, request, user))
     } catch (error) {
       await this.requests.delete(request.requestId)
       throw error

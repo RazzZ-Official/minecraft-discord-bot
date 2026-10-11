@@ -22,13 +22,27 @@ interface PanelErrorResponse {
   errors?: { detail?: string }[]
 }
 
+export type PowerAction = 'start' | 'stop' | 'restart'
+
+export interface ServerResources {
+  /** eg. "running", "starting", "stopping" or "offline". */
+  state: string
+  uptimeMs: number
+  memoryBytes: number
+  cpuPercent: number
+  diskBytes: number
+}
+
 interface ResourcesResponse {
-  attributes: { current_state: string; resources: { uptime: number } }
+  attributes: {
+    current_state: string
+    resources: { uptime: number; memory_bytes: number; cpu_absolute: number; disk_bytes: number }
+  }
 }
 
 /**
  * Client for the hosting panel's client API (Reviactyl, a Pterodactyl fork). Only routes verified against the panel
- * are used: server resources, reading files and sending console commands.
+ * are used: server resources, power actions, reading files and sending console commands.
  */
 export class PanelClient {
   private constructor(private readonly credentials: PanelCredentials) {}
@@ -40,10 +54,27 @@ export class PanelClient {
     return new PanelClient({ url: url.replace(/\/+$/, ''), serverId, apiKey: apiKey.trim() })
   }
 
+  async getResources(): Promise<ServerResources> {
+    const { attributes } = (await (await this.request('/resources')).json()) as ResourcesResponse
+    const { resources } = attributes
+    return {
+      state: attributes.current_state,
+      uptimeMs: resources.uptime,
+      memoryBytes: resources.memory_bytes,
+      cpuPercent: resources.cpu_absolute,
+      diskBytes: resources.disk_bytes,
+    }
+  }
+
   /** The server's uptime in milliseconds, or null when it is not running. */
   async getServerUptime(): Promise<number | null> {
-    const { attributes } = (await (await this.request('/resources')).json()) as ResourcesResponse
-    return attributes.current_state === 'running' ? attributes.resources.uptime : null
+    const resources = await this.getResources()
+    return resources.state === 'running' ? resources.uptimeMs : null
+  }
+
+  /** Starts, stops or restarts the server. Killing the server is deliberately not offered. */
+  async setPower(action: PowerAction): Promise<void> {
+    await this.request('/power', { method: 'POST', body: { signal: action } })
   }
 
   async readFile(path: string): Promise<string> {
@@ -51,8 +82,8 @@ export class PanelClient {
   }
 
   /**
-   * Sends a console command. Callers must only build commands from validated input; see WhitelistGateway, which is
-   * the only caller.
+   * Sends a console command. Callers must only build fixed commands from validated input; see WhitelistGateway and
+   * OperatorGateway, the only callers.
    */
   async sendCommand(command: string): Promise<void> {
     await this.request('/command', { method: 'POST', body: { command } })

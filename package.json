@@ -15,7 +15,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "migrate:json": "tsx src/scripts/migrateJson.ts"
+    "migrate:json": "tsx src/scripts/migrateJson.ts",
+    "discord:minecraft": "tsx src/scripts/setupMinecraftSection.ts"
   },
   "repository": {
     "type": "git",

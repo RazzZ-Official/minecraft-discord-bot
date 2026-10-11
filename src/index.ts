@@ -7,11 +7,14 @@ import { Database } from './core/Database.js'
 import { Logger } from './core/Logger.js'
 import { AutoReplyModule } from './modules/auto-reply/AutoReplyModule.js'
 import { GeneralModule } from './modules/general/GeneralModule.js'
+import { OperatorModule } from './modules/operator/OperatorModule.js'
 import { PlayerCountModule } from './modules/player-count/PlayerCountModule.js'
 import { PresenceModule } from './modules/presence/PresenceModule.js'
 import { ServerModule } from './modules/server/ServerModule.js'
+import { ServerControlModule } from './modules/server-control/ServerControlModule.js'
 import { StatusCardModule } from './modules/status-card/StatusCardModule.js'
 import { WhitelistModule } from './modules/whitelist/WhitelistModule.js'
+import { AuditLog } from './services/AuditLog.js'
 import { MinecraftStatusService } from './services/MinecraftStatusService.js'
 import { PanelClient } from './services/PanelClient.js'
 
@@ -25,6 +28,7 @@ const main = async (): Promise<void> => {
     logger,
     minecraft: new MinecraftStatusService(botConfig.server),
     panel: PanelClient.fromEnv(env),
+    audit: new AuditLog(botConfig.auditLog, logger.child('audit')),
   }
   if (botConfig.whitelist.enabled && !context.panel) {
     logger.warn(
@@ -45,6 +49,8 @@ const main = async (): Promise<void> => {
     new PlayerCountModule(context),
     new AutoReplyModule(context),
     new WhitelistModule(context),
+    new ServerControlModule(context),
+    new OperatorModule(context),
   ])
 
   const shutdown = async (signal: string): Promise<void> => {

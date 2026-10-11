@@ -17,10 +17,19 @@ export interface ServerConfig {
   zeroMaxPlayersMeansOffline: boolean
 }
 
+export interface PresenceActivity {
+  /** "Custom" shows the text on its own, like a custom status. */
+  type: 'Playing' | 'Listening' | 'Watching' | 'Competing' | 'Custom'
+  text: string
+}
+
 export interface PresenceConfig {
   enabled: boolean
-  activity: 'Playing' | 'Listening' | 'Watching' | 'Competing'
-  text: { online: string; offline: string }
+  /** Seconds each activity is shown before the next one. Discord limits presence updates, so keep it at 15 or more. */
+  rotateSeconds: number
+  /** Activities shown in turn while the server is online, and while it is offline. */
+  online: PresenceActivity[]
+  offline: PresenceActivity[]
   status: { online: PresenceStatusData; offline: PresenceStatusData }
 }
 
@@ -99,9 +108,20 @@ export interface ServerInfoConfig {
 export interface WhitelistConfig {
   enabled: boolean
   staffChannelId: string
-  logChannelId: string
   staffRoleIds: string[]
   banner: string
+}
+
+/** A feature limited to members with one of the roles, used in one channel. */
+export interface RestrictedFeatureConfig {
+  enabled: boolean
+  roleIds: string[]
+  channelId: string
+}
+
+export interface AuditLogConfig {
+  /** Channel where every action taken through the bot is recorded. Leave blank to log to the console only. */
+  channelId: string
 }
 
 export interface BotConfig {
@@ -115,4 +135,7 @@ export interface BotConfig {
   autoReply: AutoReplyConfig
   serverInfo: ServerInfoConfig
   whitelist: WhitelistConfig
+  serverControl: RestrictedFeatureConfig
+  operatorCommands: RestrictedFeatureConfig
+  auditLog: AuditLogConfig
 }

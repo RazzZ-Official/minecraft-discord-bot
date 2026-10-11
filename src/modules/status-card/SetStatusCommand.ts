@@ -3,7 +3,7 @@ import type { ChatInputCommandInteraction } from 'discord.js'
 import type { BotConfig, Edition } from '../../config/types.js'
 import { SlashCommand } from '../../core/commands/SlashCommand.js'
 import type { CommandData } from '../../core/commands/SlashCommand.js'
-import type { Logger } from '../../core/Logger.js'
+import type { AuditLog } from '../../services/AuditLog.js'
 import { fill } from '../../shared/format.js'
 import { Mention } from '../../shared/Mention.js'
 import type { StatusCardService } from './StatusCardService.js'
@@ -28,7 +28,7 @@ export class SetStatusCommand extends SlashCommand {
   constructor(
     private readonly config: BotConfig,
     private readonly service: StatusCardService,
-    private readonly logger: Logger
+    private readonly audit: AuditLog
   ) {
     super()
     const builder = new SlashCommandBuilder()
@@ -85,6 +85,14 @@ export class SetStatusCommand extends SlashCommand {
     await message.edit(await this.service.render(target))
 
     await interaction.editReply(fill(Text.success, { channel: `<#${message.channelId}>`, link: message.url }))
-    this.logger.info(`Status message set in #${'name' in message.channel ? message.channel.name : message.channelId}.`)
+    await this.audit.record(interaction.client, {
+      actor: interaction.user,
+      action: '📊 Status message set',
+      summary: `set a status message for ${target.ip}:${target.port}.`,
+      fields: [
+        { name: 'Channel', value: `<#${message.channelId}>`, inline: true },
+        { name: 'Server', value: `\`${target.ip}:${target.port}\``, inline: true },
+      ],
+    })
   }
 }

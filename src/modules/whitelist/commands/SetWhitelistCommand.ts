@@ -1,6 +1,7 @@
 import { InteractionContextType, MessageFlags, SlashCommandBuilder } from 'discord.js'
 import type { ChatInputCommandInteraction } from 'discord.js'
 import { SlashCommand } from '../../../core/commands/SlashCommand.js'
+import type { AuditLog } from '../../../services/AuditLog.js'
 import { fill } from '../../../shared/format.js'
 import { WhitelistText } from '../messages.js'
 import type { StaffGuard } from '../StaffGuard.js'
@@ -15,7 +16,8 @@ export class SetWhitelistCommand extends SlashCommand {
 
   constructor(
     private readonly views: WhitelistViews,
-    private readonly guard: StaffGuard
+    private readonly guard: StaffGuard,
+    private readonly audit: AuditLog
   ) {
     super()
   }
@@ -29,5 +31,11 @@ export class SetWhitelistCommand extends SlashCommand {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral })
     await interaction.channel.send(this.views.requestPanelMessage())
     await interaction.editReply(fill(WhitelistText.replies.panelPosted, { channel: `<#${interaction.channelId}>` }))
+    await this.audit.record(interaction.client, {
+      actor: interaction.user,
+      action: '📝 Whitelist panel posted',
+      summary: `posted the whitelist panel in #${interaction.channelId}.`,
+      fields: [{ name: 'Channel', value: `<#${interaction.channelId}>`, inline: true }],
+    })
   }
 }

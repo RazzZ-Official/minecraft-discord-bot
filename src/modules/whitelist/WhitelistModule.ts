@@ -55,12 +55,15 @@ export class WhitelistModule extends BotModule {
     const service = new WhitelistService(
       new WhitelistRequestRepository(),
       new WhitelistGateway(panel),
-      new WhitelistNotifier(config.whitelist, views, logger),
+      new WhitelistNotifier(config.whitelist, views, context.audit),
       logger
     )
     const deps = { service, views, guard }
 
-    this.commandList.push(new WhitelistCommand(service, views, guard), new SetWhitelistCommand(views, guard))
+    this.commandList.push(
+      new WhitelistCommand(service, views, guard),
+      new SetWhitelistCommand(views, guard, context.audit)
+    )
     this.buttonList.push(new ApproveButton(deps), new RejectButton(deps), new OpenRequestFormButton(views))
     this.modalList.push(new RejectReasonModal(deps), new RequestFormModal(service))
   }

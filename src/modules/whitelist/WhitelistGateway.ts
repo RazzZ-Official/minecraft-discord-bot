@@ -1,18 +1,13 @@
 import { PanelError } from '../../services/PanelClient.js'
 import type { PanelClient } from '../../services/PanelClient.js'
+import { waitUntil } from '../../shared/waitUntil.js'
 import { PlayerName } from './PlayerName.js'
 import type { PlayerIdentity, WhitelistEntry } from './PlayerName.js'
 
-// Commands run asynchronously on the server, so whitelist.json is polled to confirm each change.
-const VERIFY_ATTEMPTS = 6
-const VERIFY_DELAY_MS = 1_500
-
-const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
-
 /**
- * Reads and changes the server whitelist through the panel. This is the only place console commands are built, and
- * only from names validated by PlayerName: "whitelist add|remove <name>" for Java and "fwhitelist add|remove" for
- * Bedrock (Floodgate), so no other command can reach the console.
+ * Reads and changes the server whitelist through the panel. Whitelist console commands are only built here, from
+ * names validated by PlayerName: "whitelist add|remove <name>" for Java and "fwhitelist add|remove" for Bedrock
+ * (Floodgate). Commands run asynchronously, so whitelist.json is polled to confirm each change.
  */
 export class WhitelistGateway {
   constructor(private readonly panel: PanelClient) {}
@@ -38,7 +33,7 @@ export class WhitelistGateway {
     const command =
       checked.edition === 'bedrock' ? `fwhitelist add "${checked.username}"` : `whitelist add ${checked.username}`
     await this.panel.sendCommand(command)
-    return this.waitUntil(() => this.isWhitelisted(checked.whitelistName))
+    return waitUntil(() => this.isWhitelisted(checked.whitelistName))
   }
 
   /** Removes an entry read from whitelist.json and waits until it is gone. Returns false if it could not be confirmed. */
@@ -48,15 +43,7 @@ export class WhitelistGateway {
     const command =
       target.edition === 'bedrock' ? `fwhitelist remove ${target.identifier}` : `whitelist remove ${target.identifier}`
     await this.panel.sendCommand(command)
-    return this.waitUntil(async () => !(await this.list()).some((current) => current.uuid === entry.uuid))
-  }
-
-  private async waitUntil(check: () => Promise<boolean>): Promise<boolean> {
-    for (let attempt = 0; attempt < VERIFY_ATTEMPTS; attempt++) {
-      await sleep(VERIFY_DELAY_MS)
-      if (await check()) return true
-    }
-    return false
+    return waitUntil(async () => !(await this.list()).some((current) => current.uuid === entry.uuid))
   }
 }
 

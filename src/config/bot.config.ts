@@ -16,11 +16,27 @@ export const botConfig: BotConfig = {
     zeroMaxPlayersMeansOffline: true,
   },
 
-  // The bot's own Discord status. {playeronline} and {playermax} show the player count.
+  // The bot's own Discord status, rotating through these activities.
+  // Placeholders: {playeronline}, {playermax}, {name}, {ip}, {version}, {uptime}. An activity whose placeholder has no
+  // value right now (eg. {uptime} without panel access) is skipped.
   presence: {
     enabled: true,
-    activity: 'Playing',
-    text: { online: 'with {playeronline}/{playermax} players', offline: 'Server Offline' },
+    rotateSeconds: 20,
+    online: [
+      { type: 'Custom', text: '🟢 {playeronline}/{playermax} players online' },
+      { type: 'Playing', text: '{name} • Java & Bedrock' },
+      { type: 'Watching', text: '🌐 {ip}' },
+      { type: 'Custom', text: '⏱️ Online for {uptime}' },
+      { type: 'Listening', text: '/serverinfo • /help' },
+      { type: 'Playing', text: '⛏️ {version}' },
+      { type: 'Competing', text: 'survival on {name}' },
+      { type: 'Custom', text: '📝 Join via #whitelist' },
+    ],
+    offline: [
+      { type: 'Custom', text: '🔴 Server offline' },
+      { type: 'Watching', text: 'for the server to come back' },
+      { type: 'Listening', text: '/status for updates' },
+    ],
     status: { online: 'online', offline: 'idle' },
   },
 
@@ -92,9 +108,27 @@ export const botConfig: BotConfig = {
   // Whitelist requests through the /setwhitelist panel, reviewed by staff.
   whitelist: {
     enabled: true,
-    staffChannelId: '1558722136472948807', // Private channel for requests and /whitelist list|remove.
-    logChannelId: '1558723180711911465', // Decision log channel. Leave blank to log to the console only.
-    staffRoleIds: ['1558722619543396463'], // If empty, only Administrators count as staff.
+    staffChannelId: '1558722136472948807', // 🛡️・Whitelist-Manage: requests and /whitelist list|remove.
+    staffRoleIds: ['1558722619543396463', '1558757325009846333'], // MC Staff, MC Admin. If empty, only Administrators.
     banner: './assets/serverinfo-banner.gif',
+  },
+
+  // Start, stop and restart the server through the panel: /server, and the control panel posted with /server panel.
+  serverControl: {
+    enabled: true,
+    roleIds: ['1558757325009846333'], // MC Admin
+    channelId: '1558757394920636449', // 🖥️・Server-Panel. Commands only work there.
+  },
+
+  // In-game operator commands: /mc op, deop, kick, ban, unban and broadcast.
+  operatorCommands: {
+    enabled: true,
+    roleIds: ['1429366850621538344'], // The top role.
+    channelId: '1558757397600796743', // ⚔️・Mc-Commands. Commands only work there.
+  },
+
+  // Every action taken through the bot (whitelist decisions, server power, operator commands, setup) is recorded here.
+  auditLog: {
+    channelId: '1558723180711911465', // 📜・Dc-Mc-Logs
   },
 }

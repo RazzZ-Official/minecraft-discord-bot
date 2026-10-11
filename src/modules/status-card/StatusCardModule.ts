@@ -22,7 +22,7 @@ export class StatusCardModule extends BotModule {
     this.logger = context.logger.child(this.name)
     const service = new StatusCardService(context, new StatusCardView(context.config))
     this.updater = new StatusCardUpdater(service, this.logger)
-    this.setStatus = new SetStatusCommand(context.config, service, this.logger)
+    this.setStatus = new SetStatusCommand(context.config, service, context.audit)
   }
 
   override get enabled(): boolean {
