@@ -259,7 +259,7 @@ const getUptime = async (ip) => {
   }
 }
 
-const statusMessageEdit = async (ip, port, type, name, message) => {
+const statusMessageEdit = async (ip, port, type, name, message, mention = '') => {
   try {
     const { statusCardMessage } = require('./embeds')
     const data = type === 'java' ? await statusJava(ip, port) : await statusBedrock(ip, port)
@@ -268,7 +268,9 @@ const statusMessageEdit = async (ip, port, type, name, message) => {
       ? await Promise.all([type === 'java' ? getPing(ip, port) : null, getUptime(ip)])
       : [null, null]
     const attachedFileNames = [...message.attachments.values()].map((attachment) => attachment.name)
-    await message.edit(statusCardMessage({ data, ip, port, type, name, isOnline, ping, uptime }, attachedFileNames))
+    await message.edit(
+      statusCardMessage({ data, ip, port, type, name, isOnline, ping, uptime }, { attachedFileNames, mention })
+    )
   } catch (error) {
     getError(error, 'messageEdit')
   }

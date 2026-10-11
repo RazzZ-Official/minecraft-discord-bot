@@ -13,7 +13,7 @@ module.exports = async (client) => {
         for (const value of dataRead.autoChangeStatus) {
           const channel = await client.channels.fetch(value.channelId)
           const message = await channel.messages.fetch(value.messageId)
-          await statusMessageEdit(value.ip, value.port, value.type, value.name, message)
+          await statusMessageEdit(value.ip, value.port, value.type, value.name, message, value.mention)
           messagesIdArray.push(value)
         }
       } catch (error) {

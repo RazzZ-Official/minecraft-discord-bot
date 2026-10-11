@@ -21,13 +21,11 @@ module.exports = {
   },
   mcserver: {
     ip: "mc.razzz.in", // IP address of the MC server.
-    port: 25598, // Port number of the MC server. Use Query Port in Java for the full player list.
+    port: 25598, // Port number of the MC server, used everywhere in the bot. Geyser (Bedrock) uses the same port.
     type: "java", // Type of MC server: "java" or "bedrock".
     name: "RazzZ SMP V3", // Name of the MC server.
     version: "Requires 1.20 - 1.26.3", // Version of the MC server.
-    // Direct image URL of the MC server logo, shown on the bot's embeds (eg. an Imgur i.imgur.com link).
-    // Discord attachment links expire, so do not use them here. The logo file is saved in assets/server-logo.png.
-    icon: "https://i.imgur.com/6Msem8Q.png",
+    icon: "https://raw.githubusercontent.com/RazzZ-Official/minecraft-discord-bot/c6ca34730c0c48567d639d5973e0630b70fbef7e/assets/server-logo.png",
     site: "https://razzz.in", // URL of the MC server or vote website. Leave blank to disable site commands.
   },
 
@@ -65,6 +63,9 @@ module.exports = {
     updateInterval: 60, // Interval between status updates in seconds. Recommended: above 60.
     adminOnly: true, // It makes admins who with the "Manage Channel" permission can only set the status message.
     banner: "./assets/serverinfo-banner.gif", // Image at the bottom of the status message: a local file path or an image URL. Leave blank to disable.
+    // Who is mentioned on the status message: "everyone", "here", a role ID, or "" for no mention. It pings once when
+    // /setstatus creates the message, and only if the member has the "Mention @everyone, @here and All Roles" permission.
+    mention: "everyone",
     // These settings apply to slash (/) and prefix commands for status.
     isOnlineCheck: true, // Useful for servers using free hosting providers like Aternos. If the server's max players is 0, the status will be set to offline.
   },
@@ -117,9 +118,8 @@ module.exports = {
   },
 
   // Server info card sent by the serverinfo command. Texts are in the translation files (embeds.json5 > serverInfo).
-  // The Java address (mcserver.ip) and the live MOTD are taken from the mcserver settings above.
+  // The addresses (mcserver.ip and mcserver.port) and the live MOTD are taken from the mcserver settings above.
   serverInfo: {
-    bedrockPort: 25593, // Bedrock (Geyser) port, shown as mcserver.ip:bedrockPort.
     color: "#2ECC71", // Color of the card's side bar.
     banner: "./assets/serverinfo-banner.gif", // Image at the bottom of the card: a local file path or an image URL. Leave blank to disable.
     // Who is pinged above the card: "everyone", "here", a role ID, or "" for no ping.

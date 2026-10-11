@@ -273,8 +273,8 @@ const bannerImage = (banner, attachedFileNames = []) => {
 // Turns a multi-line MOTD into a single line.
 const cleanMotd = (motd) => (motd ?? '').replace(/\s+/g, ' ').trim()
 
-// Mention text and allowed mentions for a serverInfo.mention setting: "everyone", "here" or a role ID.
-const serverInfoMention = (mention) => {
+// Mention text and allowed mentions for a mention setting: "everyone", "here", a role ID, or "" for none.
+const mentionFor = (mention) => {
   if (mention === 'everyone' || mention === 'here')
     return { text: `@${mention}`, allowedMentions: { parse: ['everyone'] } }
   if (mention) return { text: `<@&${mention}>`, allowedMentions: { roles: [mention] } }
@@ -296,7 +296,7 @@ const serverInfoMessage = async ({ canMention = false } = {}) => {
     // The MOTD line is left out while the server is offline.
     motd && `> ${fillFields(text.motd)}`,
     `${text.java}\n\`\`\`\n${mcserver.ip}\n\`\`\``,
-    `${text.bedrock}\n\`\`\`\n${mcserver.ip}:${serverInfo.bedrockPort}\n\`\`\``,
+    `${text.bedrock}\n\`\`\`\n${mcserver.ip}:${mcserver.port}\n\`\`\``,
     text.copyHint,
   ]
     .filter(Boolean)
@@ -311,7 +311,7 @@ const serverInfoMessage = async ({ canMention = false } = {}) => {
   const { imageUrl, files } = bannerImage(serverInfo.banner)
   if (imageUrl) embed.setImage(imageUrl)
 
-  const mention = serverInfoMention(canMention ? serverInfo.mention : '')
+  const mention = mentionFor(canMention ? serverInfo.mention : '')
   return {
     content: fillFields(text.content)
       .replace(/\{mention\}/gi, mention.text)
@@ -374,9 +374,14 @@ const playerTable = (players, type) => {
 /**
  * Message for the auto-updating status set with /setstatus.
  * @param status Server status from node-mcstatus, plus the measured ping and the panel uptime (null when unknown).
- * @param attachedFileNames Names of files already attached to the message, so the banner is only uploaded once.
+ * @param options.attachedFileNames Names of files already attached to the message, so the banner is only uploaded once.
+ * @param options.mention Mention saved when the status message was created. Discord does not ping on edits, so it
+ *   only keeps the mention visible.
  */
-const statusCardMessage = ({ data, ip, port, type, name, isOnline, ping, uptime }, attachedFileNames = []) => {
+const statusCardMessage = (
+  { data, ip, port, type, name, isOnline, ping, uptime },
+  { attachedFileNames = [], mention = '' } = {}
+) => {
   const text = embedTranslation.statusCard
   const address = formatAddress(ip, port, type)
   const embed = new EmbedBuilder()
@@ -413,10 +418,12 @@ const statusCardMessage = ({ data, ip, port, type, name, isOnline, ping, uptime 
 
   const { imageUrl, files } = bannerImage(autoChangeStatus.banner, attachedFileNames)
   if (imageUrl) embed.setImage(imageUrl)
-  return { content: '', embeds: [embed], files }
+  const { text: mentionText, allowedMentions } = mentionFor(mention)
+  return { content: mentionText, embeds: [embed], files, allowedMentions }
 }
 
 module.exports = {
+  mentionFor,
   statusCardMessage,
   serverInfoMessage,
   versionEmbed,
