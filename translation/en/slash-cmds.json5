@@ -67,12 +67,27 @@
   // Whitelist request command. {username} is the player's whitelist name and {edition} is Java or Bedrock.
   whitelist: {
     name: 'whitelist',
-    description: 'Request or manage access to the Minecraft server whitelist.',
-    request: {
-      name: 'request',
-      description: 'Request to be added to the Minecraft server whitelist.',
-      username: 'Your Minecraft username. Bedrock players: your Xbox gamertag.',
-      edition: 'The Minecraft edition you play on.',
+    description: 'Manage the Minecraft server whitelist. Staff only.',
+    // /setwhitelist posts the request panel in the current channel.
+    setup: {
+      name: 'setwhitelist',
+      description: 'Posts the whitelist request panel in this channel. Staff only.',
+    },
+    // Variables: {name} (server name)
+    panel: {
+      title: '📝 {name} Whitelist',
+      description: 'Want to play on **{name}**? Request access to the whitelist!\n\n**How it works**\n1. Click **Request Whitelist** below.\n2. Enter your Minecraft username and choose your edition.\n3. Staff review your request, and you get a DM with the decision.\n\n💻 **Java:** enter your Minecraft username.\n📱 **Bedrock:** enter your Xbox gamertag.',
+      footer: 'Make sure your DMs are open to receive the decision.',
+      button: 'Request Whitelist',
+    },
+    form: {
+      title: 'Whitelist Request',
+      info: 'Staff will review your request. You get a DM once it is approved or rejected.',
+      usernameLabel: 'Minecraft Username',
+      usernameDescription: 'Java: your username. Bedrock: your Xbox gamertag.',
+      usernamePlaceholder: 'eg. Steve',
+      editionLabel: 'Edition',
+      editionPlaceholder: 'Choose your edition',
     },
     list: {
       name: 'list',
@@ -84,6 +99,9 @@
       username: 'The whitelist entry to remove, eg: EdenZyn or .Connor_Leo2299',
     },
     replies: {
+      disabled: ':no_entry: Whitelist requests are currently disabled.',
+      // {channel} is the channel the panel was posted in.
+      panelPosted: ':white_check_mark: The whitelist request panel was posted in {channel}.',
       invalidJava: ':warning: **`{username}` is not a valid Java username. Use 3-16 letters, numbers or underscores.**',
       invalidBedrock: ':warning: **`{username}` is not a valid Bedrock gamertag. Use up to 16 letters, numbers or spaces.**',
       alreadyWhitelisted: ':white_check_mark: **{username}** is already whitelisted. You can join the server.',

@@ -127,7 +127,8 @@ module.exports = {
     mention: "everyone",
   },
 
-  // Players request access with /whitelist request, and staff approve or reject it in a private channel.
+  // Staff post a request panel with /setwhitelist. Players click its button and fill in a form, and staff approve or
+  // reject the request in a private channel.
   // Approved players are added through the hosting panel API (see panel below). Bedrock players use Floodgate's fwhitelist.
   whitelist: {
     enabled: true,
@@ -135,8 +136,7 @@ module.exports = {
     logChannelId: "1558723180711911465", // Channel for decision logs. Leave blank to log decisions only to the console.
     // Roles allowed to approve or reject requests. eg: ['1234567','8909876',]. If empty, only Administrators can.
     staffRoleIds: ["1558722619543396463"],
-    // Channels where /whitelist request can be used. eg: ['1234567','8909876',]. Leave empty to allow all channels.
-    requestChannels: ["1558721889873043486"],
+    banner: "./assets/serverinfo-banner.gif", // Image at the bottom of the request panel: a local file path or an image URL. Leave blank to disable.
   },
 
   // Hosting panel (Pterodactyl / Reviactyl) used by the whitelist feature and the status message uptime.

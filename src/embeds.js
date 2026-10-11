@@ -423,6 +423,7 @@ const statusCardMessage = (
 }
 
 module.exports = {
+  bannerImage,
   mentionFor,
   statusCardMessage,
   serverInfoMessage,

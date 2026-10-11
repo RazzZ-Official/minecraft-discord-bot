@@ -6,9 +6,13 @@ const {
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
+  LabelBuilder,
+  TextDisplayBuilder,
+  StringSelectMenuBuilder,
 } = require('discord.js')
-const { mcserver } = require('../../config')
+const { mcserver, whitelist } = require('../../config')
 const { cmdSlashTranslation } = require('../index')
+const { bannerImage } = require('../embeds')
 const { parseWhitelistEntry } = require('./username')
 
 const text = cmdSlashTranslation.whitelist
@@ -17,6 +21,12 @@ const CUSTOM_ID = {
   approve: 'whitelist:approve',
   reject: 'whitelist:reject',
   rejectReason: 'whitelist:reject-reason',
+}
+
+// The request panel uses its own prefix, so the staff decision handler never picks these up.
+const PANEL_ID = {
+  openForm: 'whitelist-panel:open',
+  submitForm: 'whitelist-panel:submit',
 }
 
 const STATUS_COLORS = {
@@ -179,8 +189,63 @@ const removalLog = (entry, staffId) => {
   return { embeds: [embed] }
 }
 
+/** Info card with the button that opens the request form, posted with /setwhitelist. */
+const requestPanelMessage = () => {
+  const embed = new EmbedBuilder()
+    .setColor('Green')
+    .setAuthor({ name: mcserver.name, iconURL: mcserver.icon })
+    .setTitle(text.panel.title.replace(/\{name\}/gi, mcserver.name))
+    .setDescription(text.panel.description.replace(/\{name\}/gi, mcserver.name))
+    .setThumbnail(mcserver.icon)
+    .setFooter({ text: text.panel.footer })
+  const { imageUrl, files } = bannerImage(whitelist.banner)
+  if (imageUrl) embed.setImage(imageUrl)
+
+  const button = new ButtonBuilder()
+    .setCustomId(PANEL_ID.openForm)
+    .setLabel(text.panel.button)
+    .setEmoji('📝')
+    .setStyle(ButtonStyle.Success)
+  return { embeds: [embed], components: [new ActionRowBuilder().addComponents(button)], files }
+}
+
+/** Form where players enter their username and pick their edition. */
+const requestFormModal = () =>
+  new ModalBuilder()
+    .setCustomId(PANEL_ID.submitForm)
+    .setTitle(text.form.title)
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(text.form.info))
+    .addLabelComponents(
+      new LabelBuilder()
+        .setLabel(text.form.usernameLabel)
+        .setDescription(text.form.usernameDescription)
+        .setTextInputComponent(
+          new TextInputBuilder()
+            .setCustomId('username')
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder(text.form.usernamePlaceholder)
+            .setRequired(true)
+            .setMaxLength(32)
+        ),
+      new LabelBuilder()
+        .setLabel(text.form.editionLabel)
+        .setStringSelectMenuComponent(
+          new StringSelectMenuBuilder()
+            .setCustomId('edition')
+            .setPlaceholder(text.form.editionPlaceholder)
+            .setRequired(true)
+            .addOptions(
+              { label: 'Java', value: 'java', emoji: '💻' },
+              { label: 'Bedrock', value: 'bedrock', emoji: '📱' }
+            )
+        )
+    )
+
 module.exports = {
   CUSTOM_ID,
+  PANEL_ID,
+  requestPanelMessage,
+  requestFormModal,
   editionName,
   entryEdition,
   statusText,
