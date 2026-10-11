@@ -67,4 +67,40 @@
     // Variables: {cpuUsage}, {memoryUsage}, {nodeVersion}, {uptimeDays}, {uptimeHours}, {uptimeMinutes}, {uptimeSeconds}, {ping}, {websocket}
     description: '**CPU Usage: `{cpuUsage}%`\nMemory Usage: `{memoryUsage}MB`\nNode.js Version: `{nodeVersion}`\nBot uptime: `{uptimeDays}` days, `{uptimeHours}` hours, `{uptimeMinutes}`, minutes, `{uptimeSeconds}` seconds\nPing: Client `{ping}ms` | Websocket: `{websocket}ms` **',
   },
+
+  // Server info card. Variables: {name} (server name), {motd} (the server's live MOTD, hidden while offline).
+  // Only content variables: {mention} pings who is set in serverInfo.mention.
+  serverInfo: {
+    content: "{mention} 🏕️ Here's the current **{name}** server info!",
+    author: '{name} Server Info',
+    welcome: '🏝️ **Welcome to {name}!**',
+    motd: '💬 **MOTD:** {motd}',
+    java: '💻 **Java Edition**',
+    bedrock: '📱 **Bedrock Edition**',
+    copyHint: '✨ *Copy the IP and join your preferred edition!*',
+    footer: 'Server online 24/7 • Supports Java & Bedrock',
+  },
+
+  // Auto-updating status message set with /setstatus.
+  statusCard: {
+    // Variables: {name}
+    onlineTitle: '⚡ {name} is Online!',
+    offlineTitle: '🔴 {name} is Offline',
+    // Variables: {motd}, {ip}, {version}
+    onlineDescription: '**MOTD:** {motd}\n**IP:** `{ip}`\n**Version:** {version}',
+    // Variables: {ip}
+    offlineDescription: '**IP:** `{ip}`\nThe server is currently unreachable.',
+    edition: '🧱 Edition',
+    ping: '📡 Ping',
+    uptime: '⏱️ Uptime',
+    playerSlots: '📊 Player Slots',
+    onlinePlayers: '🧍 Online Players',
+    tablePlayer: 'Player Name',
+    tablePlatform: 'Platform',
+    noPlayers: 'No players online right now.',
+    playersHidden: 'The server does not share its player list.',
+    // Variables: {count}
+    morePlayers: '...and {count} more',
+    notAvailable: 'N/A',
+  },
 }

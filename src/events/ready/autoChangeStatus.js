@@ -1,5 +1,5 @@
 const fs = require('fs')
-const { statusMessageEdit, consoleLogTranslation, getError, removeUnusedEmojis } = require('../../index.js')
+const { statusMessageEdit, consoleLogTranslation, getError } = require('../../index.js')
 const chalk = require('chalk')
 const config = require('../../../config.js')
 
@@ -13,10 +13,9 @@ module.exports = async (client) => {
         for (const value of dataRead.autoChangeStatus) {
           const channel = await client.channels.fetch(value.channelId)
           const message = await channel.messages.fetch(value.messageId)
-          await statusMessageEdit(value.ip, value.port, value.type, value.name, message, value.isPlayerAvatarEmoji)
+          await statusMessageEdit(value.ip, value.port, value.type, value.name, message)
           messagesIdArray.push(value)
         }
-        removeUnusedEmojis()
       } catch (error) {
         if (error.rawError.message === 'Unknown Message') return
         getError(error, 'messageEdit')

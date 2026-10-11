@@ -1,11 +1,23 @@
 const { Client, IntentsBitField } = require('discord.js')
 const { statusBedrock, statusJava } = require('node-mcstatus')
-const { settings, bot, mcserver, autoChangeStatus, playerCountCH, commands, autoReply } = require('../config')
+const {
+  settings,
+  bot,
+  mcserver,
+  autoChangeStatus,
+  playerCountCH,
+  commands,
+  autoReply,
+  whitelist,
+  panel,
+} = require('../config')
 const chalk = require('chalk')
 const fs = require('fs')
 const { CommandKit } = require('commandkit')
 const process = require('node:process')
 const json5 = require('json5')
+const net = require('node:net')
+const { isPanelConfigured, getServerUptime } = require('./panel')
 
 const client = new Client({
   intents: [
@@ -87,6 +99,15 @@ const cmdSlashTranslation = json5.parse(cmdSlashContents)
   checkError(
     playerCountCH.enabled && playerCountCH.guildID === 'your-guild-id-here',
     consoleLogTranslation.checkErrorConfig.guildID
+  )
+
+  checkError(
+    whitelist.enabled && !whitelist.staffChannelId,
+    consoleLogTranslation.checkErrorConfig.whitelistStaffChannel
+  )
+  checkError(
+    whitelist.enabled && !(panel.url && panel.serverId && panel.apiKey),
+    consoleLogTranslation.checkErrorConfig.whitelistPanel
   )
 
   for (const key in cmdSlashTranslation) {
@@ -209,113 +230,45 @@ const getServerDataAndPlayerList = async (dataOnly) => {
   }
 }
 
-let UsedPlayerEmojis = []
+const PING_TIMEOUT_MS = 3_000
 
-const removeUnusedEmojis = async () => {
-  // Remove all unwanted player avatar emojis
-  const emojisList = await client.application.emojis.fetch()
-  for (const emoji of emojisList) {
-    if (!UsedPlayerEmojis.includes(emoji[1].name)) {
-      await emoji[1].delete()
+// Measures how long a TCP connection to a Java server takes from the bot, excluding the DNS lookup.
+// Bedrock servers use UDP, so they cannot be measured this way.
+const getPing = (ip, port) =>
+  new Promise((resolve) => {
+    let start = performance.now()
+    const socket = net.connect({ host: ip, port, timeout: PING_TIMEOUT_MS })
+    const finish = (ping) => {
+      socket.destroy()
+      resolve(ping)
     }
-  }
-  UsedPlayerEmojis = []
-}
+    socket.once('lookup', () => (start = performance.now()))
+    socket.once('connect', () => finish(Math.round(performance.now() - start)))
+    socket.once('timeout', () => finish(null))
+    socket.once('error', () => finish(null))
+  })
 
-const getPlayersListWithEmoji = async (playerListRaw) => {
+// The panel only knows the uptime of the configured server, so other servers' status messages show N/A.
+const getUptime = async (ip) => {
+  if (ip !== mcserver.ip || !isPanelConfigured()) return null
   try {
-    const emojisList = await client.application.emojis.fetch()
-    const playerList = []
-
-    // If the player avatar is in the emoji list, add it to the player list
-    for (const emojis of emojisList) {
-      if (playerListRaw.list.some((player) => player.name_clean === emojis[1].name)) {
-        playerList.push({ name_clean: `<:${emojis[1].name}:${emojis[1].id}> ${emojis[1].name}` })
-        UsedPlayerEmojis.push(emojis[1].name)
-      }
-    }
-
-    // CHECKING IF PLAYER LIST IN EMOJIS LIST , IF NOT THEN CREATE IT.
-    for (const { name_clean, uuid } of playerListRaw.list) {
-      if (emojisList.some((emoji) => emoji.name === name_clean)) continue
-      const createEmoji = await client.application.emojis.create({
-        attachment: `https://api.mineatar.io/head/${uuid}?scale=8&overlay=true`,
-        name: name_clean,
-      })
-      playerList.push({
-        name_clean: `<:${createEmoji.name}:${createEmoji.id}> ${createEmoji.name}`,
-      })
-      UsedPlayerEmojis.push(createEmoji.name)
-    }
-
-    const result = groupPlayerList({
-      online: playerListRaw.online,
-      max: playerListRaw.max,
-      list: playerList,
-    })
-    return result
+    return await getServerUptime()
   } catch (error) {
-    if (!settings.logging.errorLog) return
-    getErrorMessage(error, 'playerAvatarEmojiError')
+    getError(error, 'panelUptime')
+    return null
   }
 }
 
-const statusMessageEdit = async (ip, port, type, name, message, isPlayerAvatarEmoji) => {
+const statusMessageEdit = async (ip, port, type, name, message) => {
   try {
-    const { EmbedBuilder } = require('discord.js')
+    const { statusCardMessage } = require('./embeds')
     const data = type === 'java' ? await statusJava(ip, port) : await statusBedrock(ip, port)
     const isOnline = autoChangeStatus.isOnlineCheck ? data.online && data.players.max > 0 : data.online
-
-    const ipBedrock = `IP: \`${ip}\`\nPort: \`${port}\``
-    const portNumber = port === 25565 ? '' : `:\`${port}\``
-    const ipJava = `**IP: \`${ip}\`${portNumber}**`
-    const ipaddress = type === 'bedrock' ? ipBedrock : ipJava
-
-    if (isOnline) {
-      const playerList =
-        isPlayerAvatarEmoji && autoChangeStatus.playerAvatarEmoji
-          ? await getPlayersListWithEmoji(data.players)
-          : await getPlayersList(data.players)
-
-      function editDescriptionFields(description) {
-        const isVersion = type === 'java' ? data.version.name_clean : data.version.name
-        let string = description
-          .trim()
-          .replace(/\{ip\}/gi, ipaddress)
-          .replace(/\{motd\}/gi, data.motd.clean)
-          .replace(/\{version\}/gi, isVersion)
-          .replace(/\{siteText\}/gi, '')
-        return string
-      }
-      let description_field_one = editDescriptionFields(embedTranslation.onlineEmbed.description_field_one)
-      let description_field_two = editDescriptionFields(embedTranslation.onlineEmbed.description_field_two)
-      let title = editDescriptionFields(embedTranslation.onlineEmbed.title)
-
-      const onlineEmbed = new EmbedBuilder()
-        .setColor(settings.embedsColors.online)
-        .setAuthor({
-          name: name,
-        })
-        .setThumbnail(`https://api.mcstatus.io/v2/icon/${ip}:${port}`)
-        .setTitle(title)
-        .addFields(playerList)
-        .addFields({
-          name: description_field_one,
-          value: description_field_two,
-        })
-        .setTimestamp()
-        .setFooter({ text: embedTranslation.onlineEmbed.footer })
-      await message.edit({
-        content: '',
-        embeds: [onlineEmbed],
-      })
-    } else {
-      const { offlineStatus } = require('./embeds')
-      await message.edit({
-        content: '',
-        embeds: [offlineStatus()],
-      })
-    }
+    const [ping, uptime] = isOnline
+      ? await Promise.all([type === 'java' ? getPing(ip, port) : null, getUptime(ip)])
+      : [null, null]
+    const attachedFileNames = [...message.attachments.values()].map((attachment) => attachment.name)
+    await message.edit(statusCardMessage({ data, ip, port, type, name, isOnline, ping, uptime }, attachedFileNames))
   } catch (error) {
     getError(error, 'messageEdit')
   }
@@ -340,7 +293,6 @@ module.exports = {
   getDebug,
   statusMessageEdit,
   getPlayersList,
-  removeUnusedEmojis,
   isChannelAllowed,
   embedTranslation,
   consoleLogTranslation,

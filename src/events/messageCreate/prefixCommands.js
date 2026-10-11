@@ -1,6 +1,16 @@
+const { PermissionFlagsBits } = require('discord.js')
 const { commands, mcserver } = require('../../../config')
 const { cmdSlashTranslation, isChannelAllowed } = require('./../../index')
-const { ipEmbed, siteEmbed, playerList, versionEmbed, statusEmbed, motdEmbed, helpEmbed } = require('../../embeds')
+const {
+  ipEmbed,
+  siteEmbed,
+  playerList,
+  versionEmbed,
+  statusEmbed,
+  motdEmbed,
+  helpEmbed,
+  serverInfoMessage,
+} = require('../../embeds')
 
 module.exports = async (message, client) => {
   if (
@@ -46,6 +56,17 @@ module.exports = async (message, client) => {
   if (commands.motd.enabled && (content === 'motd' || commands.motd.alias.includes(content))) {
     await message.channel.sendTyping()
     message.channel.send({ embeds: [await motdEmbed()] })
+  }
+  if (commands.serverinfo.enabled && (content === 'serverinfo' || commands.serverinfo.alias.includes(content))) {
+    await message.channel.sendTyping()
+    try {
+      const canMention = Boolean(message.member?.permissions.has(PermissionFlagsBits.MentionEveryone))
+      await message.channel.send(await serverInfoMessage({ canMention }))
+    } catch (error) {
+      message.channel.send(cmdSlashTranslation.serverinfo.errorReply)
+      const { getError } = require('../../index')
+      getError(error, 'serverInfoCmd')
+    }
   }
   if (commands.ip.enabled && (content === 'ip' || commands.ip.alias.includes(content))) {
     message.channel.send({ embeds: [ipEmbed] })

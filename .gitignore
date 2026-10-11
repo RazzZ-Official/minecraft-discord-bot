@@ -2,3 +2,5 @@ node_modules/
 package-lock.json
 nodemon.json
 .env
+src/whitelist-requests.json
+src/whitelist-requests.json.tmp

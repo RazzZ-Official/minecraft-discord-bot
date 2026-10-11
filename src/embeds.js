@@ -1,6 +1,8 @@
-const { EmbedBuilder } = require('discord.js')
-const { mcserver, commands, settings } = require('../config')
+const { EmbedBuilder, AttachmentBuilder } = require('discord.js')
+const path = require('node:path')
+const { mcserver, commands, settings, serverInfo, autoChangeStatus } = require('../config')
 const { embedTranslation } = require('./index')
+const { isFloodgatePlayer } = require('./whitelist/username')
 
 const ipBedrock = `IP: \`${mcserver.ip}\`\nPort: \`${mcserver.port}\``
 const port = mcserver.port === 25565 ? '' : `:\`${mcserver.port}\``
@@ -254,7 +256,169 @@ const botInfoEmbed = async (interaction, client) => {
     )
 }
 
+/**
+ * Resolves a banner setting to an embed image. A local file is attached to the message so its link never expires.
+ * Files already attached to the message being edited are not uploaded again.
+ */
+const bannerImage = (banner, attachedFileNames = []) => {
+  if (!banner) return { imageUrl: null, files: [] }
+  if (/^https?:\/\//i.test(banner)) return { imageUrl: banner, files: [] }
+  const fileName = path.basename(banner)
+  const files = attachedFileNames.includes(fileName)
+    ? []
+    : [new AttachmentBuilder(path.resolve(banner), { name: fileName })]
+  return { imageUrl: `attachment://${fileName}`, files }
+}
+
+// Turns a multi-line MOTD into a single line.
+const cleanMotd = (motd) => (motd ?? '').replace(/\s+/g, ' ').trim()
+
+// Mention text and allowed mentions for a serverInfo.mention setting: "everyone", "here" or a role ID.
+const serverInfoMention = (mention) => {
+  if (mention === 'everyone' || mention === 'here')
+    return { text: `@${mention}`, allowedMentions: { parse: ['everyone'] } }
+  if (mention) return { text: `<@&${mention}>`, allowedMentions: { roles: [mention] } }
+  return { text: '', allowedMentions: { parse: [] } }
+}
+
+/**
+ * Message for the serverinfo commands. The addresses and the live MOTD come from the mcserver settings.
+ * @param canMention Whether the member who ran the command may ping, so the mention cannot be abused.
+ */
+const serverInfoMessage = async ({ canMention = false } = {}) => {
+  const { getServerDataAndPlayerList } = require('./index')
+  const { data, isOnline } = (await getServerDataAndPlayerList(true)) ?? {}
+  const motd = isOnline ? cleanMotd(data.motd?.clean) : ''
+  const fillFields = (string) => string.replace(/\{name\}/gi, mcserver.name).replace(/\{motd\}/gi, motd)
+  const text = embedTranslation.serverInfo
+  const description = [
+    fillFields(text.welcome),
+    // The MOTD line is left out while the server is offline.
+    motd && `> ${fillFields(text.motd)}`,
+    `${text.java}\n\`\`\`\n${mcserver.ip}\n\`\`\``,
+    `${text.bedrock}\n\`\`\`\n${mcserver.ip}:${serverInfo.bedrockPort}\n\`\`\``,
+    text.copyHint,
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+
+  const embed = new EmbedBuilder()
+    .setColor(serverInfo.color)
+    .setAuthor({ name: fillFields(text.author), iconURL: mcserver.icon })
+    .setDescription(description)
+    .setFooter({ text: fillFields(text.footer), iconURL: mcserver.icon })
+
+  const { imageUrl, files } = bannerImage(serverInfo.banner)
+  if (imageUrl) embed.setImage(imageUrl)
+
+  const mention = serverInfoMention(canMention ? serverInfo.mention : '')
+  return {
+    content: fillFields(text.content)
+      .replace(/\{mention\}/gi, mention.text)
+      .trim(),
+    embeds: [embed],
+    files,
+    allowedMentions: mention.allowedMentions,
+  }
+}
+
+const PLAYER_BAR_SEGMENTS = 10
+// Keeps the player table well within the 1024 character limit of an embed field.
+const PLAYER_TABLE_MAX_ROWS = 15
+
+const formatAddress = (ip, port, type) => (type === 'java' && port === 25565 ? ip : `${ip}:${port}`)
+
+const formatUptime = (milliseconds) => {
+  const totalSeconds = Math.floor(milliseconds / 1000)
+  const days = Math.floor(totalSeconds / 86400)
+  const hours = Math.floor(totalSeconds / 3600) % 24
+  const minutes = Math.floor(totalSeconds / 60) % 60
+  const seconds = totalSeconds % 60
+  if (days) return `${days}d ${hours}h ${minutes}m`
+  if (hours) return `${hours}h ${minutes}m ${seconds}s`
+  return `${minutes}m ${seconds}s`
+}
+
+const playerSlotsBar = (online, max) => {
+  const ratio = max > 0 ? online / max : 0
+  // Show at least one filled segment while anyone is online.
+  const filled = online > 0 ? Math.min(PLAYER_BAR_SEGMENTS, Math.max(1, Math.round(ratio * PLAYER_BAR_SEGMENTS))) : 0
+  return `${'🟩'.repeat(filled)}${'⬜'.repeat(PLAYER_BAR_SEGMENTS - filled)} (${online}/${max})`
+}
+
+const playerTable = (players, type) => {
+  const text = embedTranslation.statusCard
+  if (!players.online) return text.noPlayers
+  const list = players.list ?? []
+  if (!list.length) return text.playersHidden
+
+  const rows = list.slice(0, PLAYER_TABLE_MAX_ROWS).map((player, index) => {
+    const name = player.name_clean ?? player.name
+    const isBedrock = type === 'bedrock' || isFloodgatePlayer({ uuid: player.uuid, name })
+    return [String(index + 1), name, isBedrock ? 'Bedrock' : 'Java']
+  })
+  const header = ['#', text.tablePlayer, text.tablePlatform]
+  const widths = header.map((_, column) => Math.max(...[header, ...rows].map((row) => row[column].length)))
+  const formatRow = (row) =>
+    row
+      .map((cell, column) => cell.padEnd(widths[column]))
+      .join('  ')
+      .trimEnd()
+  const lines = [formatRow(header), formatRow(widths.map((width) => '-'.repeat(width))), ...rows.map(formatRow)]
+
+  const hiddenCount = players.online - rows.length
+  const more = hiddenCount > 0 ? `\n${text.morePlayers.replace(/\{count\}/gi, hiddenCount)}` : ''
+  return `\`\`\`\n${lines.join('\n')}\n\`\`\`${more}`
+}
+
+/**
+ * Message for the auto-updating status set with /setstatus.
+ * @param status Server status from node-mcstatus, plus the measured ping and the panel uptime (null when unknown).
+ * @param attachedFileNames Names of files already attached to the message, so the banner is only uploaded once.
+ */
+const statusCardMessage = ({ data, ip, port, type, name, isOnline, ping, uptime }, attachedFileNames = []) => {
+  const text = embedTranslation.statusCard
+  const address = formatAddress(ip, port, type)
+  const embed = new EmbedBuilder()
+    .setAuthor({ name })
+    // The configured logo is used for the main server, other servers show their own server icon.
+    .setThumbnail(ip === mcserver.ip ? mcserver.icon : `https://api.mcstatus.io/v2/icon/${ip}:${port}`)
+    .setTimestamp()
+
+  if (isOnline) {
+    const version = type === 'java' ? data.version?.name_clean : data.version?.name
+    const motd = cleanMotd(data.motd?.clean)
+    embed
+      .setColor(settings.embedsColors.online)
+      .setTitle(text.onlineTitle.replace(/\{name\}/gi, name))
+      .setDescription(
+        text.onlineDescription
+          .replace(/\{motd\}/gi, motd || text.notAvailable)
+          .replace(/\{ip\}/gi, address)
+          .replace(/\{version\}/gi, version || text.notAvailable)
+      )
+      .addFields(
+        { name: text.edition, value: type === 'bedrock' ? 'Bedrock' : 'Java', inline: true },
+        { name: text.ping, value: ping === null ? text.notAvailable : `${ping}ms`, inline: true },
+        { name: text.uptime, value: uptime === null ? text.notAvailable : formatUptime(uptime), inline: true },
+        { name: text.playerSlots, value: playerSlotsBar(data.players.online, data.players.max) },
+        { name: text.onlinePlayers, value: playerTable(data.players, type) }
+      )
+  } else {
+    embed
+      .setColor(settings.embedsColors.offline)
+      .setTitle(text.offlineTitle.replace(/\{name\}/gi, name))
+      .setDescription(text.offlineDescription.replace(/\{ip\}/gi, address))
+  }
+
+  const { imageUrl, files } = bannerImage(autoChangeStatus.banner, attachedFileNames)
+  if (imageUrl) embed.setImage(imageUrl)
+  return { content: '', embeds: [embed], files }
+}
+
 module.exports = {
+  statusCardMessage,
+  serverInfoMessage,
   versionEmbed,
   siteEmbed,
   offlineStatus,

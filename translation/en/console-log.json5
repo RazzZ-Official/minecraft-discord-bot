@@ -5,6 +5,12 @@
 {
   // Translation for the console output
   error: {
+    panelUptime: 'Failed to get the server uptime from the panel.',
+    serverInfoCmd: 'Error in Command - Server Info.',
+    whitelistRequest: 'Error in Slash Command - Whitelist Request.',
+    whitelistDecision: 'Error while processing a whitelist decision.',
+    whitelistPanel: 'Error while communicating with the hosting panel.',
+    whitelistLog: 'Failed to send the whitelist decision log.',
     playerEmbed: 'An error occurred while creating Player List Embeds Message.',
     statusEmbed: 'An error occurred while creating Status Embeds Message.',
     playerList: 'An error occurred while creating the Player List.',
@@ -24,7 +30,6 @@
     playerCountCh: 'Error in Player Count Channel Feature.',
     playerCountChNameUpdate: 'Error in Updating Player Count Channel Name.',
     playerCountChDateWrite: 'Error in Saving Player Count Channel ID in data.json.',
-    playerAvatarEmojiError: 'Error while managing player avatar emojis',
     autoReplyMsgDelete: 'Error while deleting auto reply message',
   },
   debug: {
@@ -42,7 +47,16 @@
     botStatusFormat: "Bot's activity has been updated to {botStatusText}.",
     playerCountChUpdate: 'Player Count channel name is updated to {updatedName}.',
   },
+  // Whitelist decision logs. Variables: {user}, {username}, {edition}, {staff}
+  whitelist: {
+    requested: '{user} requested to whitelist {username} ({edition}).',
+    approved: '{staff} approved {username} ({edition}) for {user}.',
+    rejected: '{staff} rejected {username} ({edition}) for {user}.',
+    removed: '{staff} removed {username} ({edition}) from the whitelist.',
+  },
   checkErrorConfig: {
+    whitelistStaffChannel: 'The whitelist staff channel ID (whitelist.staffChannelId) has not been specified.',
+    whitelistPanel: 'PTERO_PANEL_URL, PTERO_SERVER_ID and PTERO_API_KEY must be set in the .env file to use the whitelist feature.',
     checkConfigWait: 'Checking for Errors in the config.js file. Please wait.',
     followingErrors: 'Config file has the following errors:',
     botToken: 'Invalid Bot Token.',

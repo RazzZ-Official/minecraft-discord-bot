@@ -29,11 +29,6 @@ let data = new SlashCommandBuilder()
       .addChoices({ name: 'Java', value: 'java' }, { name: 'Bedrock', value: 'bedrock' })
   )
 
-if (autoChangeStatus.playerAvatarEmoji) {
-  data.addBooleanOption((option) =>
-    option.setName('player_avatar').setDescription(cmdSlashTranslation.setstatus.playerAvatar).setRequired(true)
-  )
-}
 if (autoChangeStatus.adminOnly) {
   data.setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
 }
@@ -56,12 +51,6 @@ let run = async ({ interaction, client }) => {
     const type = interaction.options.getString('type') || mcserver.type
     const name = interaction.options.getString('name') || mcserver.name
 
-    const playerAvatarEmoji = interaction.options.getBoolean('player_avatar')
-    const member = await interaction.guild.members.fetch(interaction.user.id)
-    const hasManageChannels = member.permissions.has(PermissionFlagsBits.ManageChannels)
-    const isPlayerAvatarEmoji =
-      playerAvatarEmoji && hasManageChannels && autoChangeStatus.playerAvatarEmoji && type === 'java'
-
     let dataRead = await JSON.parse(readData)
 
     if (!ip.includes('.')) {
@@ -75,9 +64,8 @@ let run = async ({ interaction, client }) => {
       name,
       channelId: interaction.channelId,
       messageId: msg.id,
-      isPlayerAvatarEmoji,
     })
-    await statusMessageEdit(ip, port, type, name, msg, isPlayerAvatarEmoji)
+    await statusMessageEdit(ip, port, type, name, msg)
     fs.writeFileSync('./src/data.json', JSON.stringify(dataRead, null, 2), 'utf8')
     interaction.editReply({
       content: cmdSlashTranslation.setstatus.statusMsgSuccess
