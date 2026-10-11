@@ -23,6 +23,22 @@ export class WhitelistCommand extends SlashCommand {
     .addSubcommand((subcommand) => subcommand.setName('list').setDescription(WhitelistText.commands.list))
     .addSubcommand((subcommand) =>
       subcommand
+        .setName('link')
+        .setDescription(WhitelistText.commands.link)
+        .addUserOption((option) =>
+          option.setName('player').setDescription(WhitelistText.commands.linkPlayer).setRequired(true)
+        )
+        .addStringOption((option) =>
+          option
+            .setName('username')
+            .setDescription(WhitelistText.commands.linkUsername)
+            .setRequired(true)
+            .setMaxLength(32)
+            .setAutocomplete(true)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
         .setName('remove')
         .setDescription(WhitelistText.commands.remove)
         .addStringOption((option) =>
@@ -50,7 +66,9 @@ export class WhitelistCommand extends SlashCommand {
       await interaction.reply({ content: replies.notStaff, flags: MessageFlags.Ephemeral })
       return
     }
-    if (interaction.options.getSubcommand() === 'list') await this.list(interaction)
+    const subcommand = interaction.options.getSubcommand()
+    if (subcommand === 'list') await this.list(interaction)
+    else if (subcommand === 'link') await this.link(interaction)
     else await this.remove(interaction)
   }
 
@@ -69,6 +87,20 @@ export class WhitelistCommand extends SlashCommand {
       .slice(0, AUTOCOMPLETE_LIMIT)
       .map((entry) => ({ name: entry.name, value: entry.name }))
     await interaction.respond(choices)
+  }
+
+  // Links a member who was whitelisted before the bot handled requests, and sets their nickname.
+  private async link(interaction: ChatInputCommandInteraction): Promise<void> {
+    if (!interaction.inCachedGuild()) return
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+    const member = interaction.options.getUser('player', true)
+    const input = interaction.options.getString('username', true)
+    const entry = await this.service
+      .linkExisting(interaction.client, interaction.guild, interaction.user, member, input)
+      .catch(() => undefined)
+    if (entry === undefined) await interaction.editReply(replies.panelError)
+    else if (!entry) await interaction.editReply(fill(replies.removeNotFound, { username: stripBackticks(input) }))
+    else await interaction.editReply(fill(replies.linked, { user: `<@${member.id}>`, username: entry.name }))
   }
 
   private async list(interaction: ChatInputCommandInteraction): Promise<void> {

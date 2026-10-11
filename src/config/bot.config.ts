@@ -109,7 +109,7 @@ export const botConfig: BotConfig = {
   whitelist: {
     enabled: true,
     staffChannelId: '1558722136472948807', // 🛡️・Whitelist-Manage: requests and /whitelist list|remove.
-    staffRoleIds: ['1558722619543396463', '1558757325009846333'], // MC Staff, MC Admin. If empty, only Administrators.
+    staffRoleIds: ['1558722619543396463', '1558757325009846333'], // Whitelist Manager, MC Admin. If empty, only Administrators.
     banner: './assets/serverinfo-banner.gif',
   },
 
@@ -125,6 +125,21 @@ export const botConfig: BotConfig = {
     enabled: true,
     roleIds: ['1429366850621538344'], // The top role.
     channelId: '1558757397600796743', // ⚔️・Mc-Commands. Commands only work there.
+  },
+
+  // Discord accounts are linked to Minecraft names when staff approve a whitelist request (or with /whitelist link).
+  accounts: {
+    syncNicknames: true, // Nickname = Minecraft name, or "[TAG] name" in a team. Discord never allows it for the owner.
+  },
+
+  // Teams: MC Admins create them, leaders invite members, and each team is mirrored in game as a scoreboard team.
+  teams: {
+    enabled: true,
+    adminRoleIds: ['1558757325009846333'], // MC Admin
+    moderatorRoleIds: ['1558757325009846333'], // MC Admin can see every team's channels.
+    placeRolesAboveRoleId: '1429380790139224166', // ⌇ Fam, so members show under their team in the member list.
+    inviteExpiryHours: 24,
+    syncHours: [0, 6, 12, 18], // Also resynced at startup and whenever the server comes back online.
   },
 
   // Every action taken through the bot (whitelist decisions, server power, operator commands, setup) is recorded here.

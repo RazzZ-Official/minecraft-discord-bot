@@ -13,15 +13,22 @@ import { PresenceModule } from './modules/presence/PresenceModule.js'
 import { ServerModule } from './modules/server/ServerModule.js'
 import { ServerControlModule } from './modules/server-control/ServerControlModule.js'
 import { StatusCardModule } from './modules/status-card/StatusCardModule.js'
+import { TeamRepository } from './modules/teams/TeamRepository.js'
+import { TeamsModule } from './modules/teams/TeamsModule.js'
 import { WhitelistModule } from './modules/whitelist/WhitelistModule.js'
+import { AccountLinks } from './services/AccountLinks.js'
 import { AuditLog } from './services/AuditLog.js'
 import { MinecraftStatusService } from './services/MinecraftStatusService.js'
+import { Nicknames } from './services/Nicknames.js'
 import { PanelClient } from './services/PanelClient.js'
 
 // Composition root: builds the shared services and modules, then starts the bot.
 const main = async (): Promise<void> => {
   const env = loadEnv()
   const logger = new Logger(botConfig.logging)
+  // Shared by the whitelist and teams: nicknames show the team tag, so they need the teams.
+  const teams = new TeamRepository()
+  const links = new AccountLinks()
   const context: AppContext = {
     config: botConfig,
     env,
@@ -29,6 +36,13 @@ const main = async (): Promise<void> => {
     minecraft: new MinecraftStatusService(botConfig.server),
     panel: PanelClient.fromEnv(env),
     audit: new AuditLog(botConfig.auditLog, logger.child('audit')),
+    links,
+    nicknames: new Nicknames(
+      botConfig.accounts.syncNicknames,
+      links,
+      (userId) => teams.findByMember(userId)?.tag ?? null,
+      logger.child('nicknames')
+    ),
   }
   if (botConfig.whitelist.enabled && !context.panel) {
     logger.warn(
@@ -48,6 +62,7 @@ const main = async (): Promise<void> => {
     new WhitelistModule(context),
     new ServerControlModule(context),
     new OperatorModule(context),
+    new TeamsModule(context, teams),
   ])
 
   const shutdown = async (signal: string): Promise<void> => {

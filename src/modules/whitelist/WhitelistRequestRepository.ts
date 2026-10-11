@@ -32,6 +32,10 @@ export class WhitelistRequestRepository {
     return this.store.find((request) => request.requestId === requestId) ?? null
   }
 
+  approved(): WhitelistRequest[] {
+    return this.store.filter((request) => request.status === 'approved')
+  }
+
   findPendingByUser(userId: string): WhitelistRequest | null {
     return this.store.find((request) => request.status === 'pending' && request.userId === userId) ?? null
   }

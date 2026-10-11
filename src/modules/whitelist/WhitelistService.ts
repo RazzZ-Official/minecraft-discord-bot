@@ -1,6 +1,9 @@
-import type { Client, User } from 'discord.js'
+import type { Client, Guild, User } from 'discord.js'
 import type { Edition } from '../../config/types.js'
 import type { Logger } from '../../core/Logger.js'
+import type { AccountLinks } from '../../services/AccountLinks.js'
+import type { AuditLog } from '../../services/AuditLog.js'
+import type { Nicknames } from '../../services/Nicknames.js'
 import { PlayerName } from './PlayerName.js'
 import type { WhitelistEntry } from './PlayerName.js'
 import type { WhitelistGateway } from './WhitelistGateway.js'
@@ -42,6 +45,9 @@ export class WhitelistService {
     private readonly requests: WhitelistRequestRepository,
     private readonly gateway: WhitelistGateway,
     private readonly notifier: WhitelistNotifier,
+    private readonly links: AccountLinks,
+    private readonly nicknames: Nicknames,
+    private readonly audit: AuditLog,
     private readonly logger: Logger
   ) {}
 
@@ -101,15 +107,81 @@ export class WhitelistService {
     this.reviewing.delete(requestId)
   }
 
-  /** Adds the player to the server whitelist, then records the decision, DMs the player and logs it. */
-  async approve(client: Client, request: WhitelistRequest, staff: User): Promise<DecisionResult> {
+  /**
+   * Adds the player to the server whitelist, then records the decision, links their Discord account to the
+   * Minecraft name (setting their nickname), DMs the player and logs it.
+   */
+  async approve(client: Client, guild: Guild | null, request: WhitelistRequest, staff: User): Promise<DecisionResult> {
     try {
       if (!(await this.gateway.add(request))) return { kind: 'failed', reason: 'not-verified' }
     } catch (error) {
       this.logger.error(`Could not whitelist ${request.whitelistName}.`, error)
       return { kind: 'failed', reason: 'error', message: error instanceof Error ? error.message : String(error) }
     }
-    return this.decide(client, request.requestId, staff, { status: 'approved' })
+    const result = await this.decide(client, request.requestId, staff, { status: 'approved' })
+    if (result.kind === 'decided') {
+      await this.links.link({
+        userId: request.userId,
+        minecraftName: request.whitelistName,
+        edition: request.edition,
+        linkedBy: staff.id,
+      })
+      if (guild) await this.nicknames.update(guild, request.userId)
+    }
+    return result
+  }
+
+  /**
+   * Links players approved before account linking existed. Safe to run at every startup: players who are already
+   * linked, or whose name now belongs to someone else, are skipped. Returns how many were linked.
+   */
+  async backfillLinks(guild: Guild | null): Promise<number> {
+    let linked = 0
+    for (const request of this.requests.approved()) {
+      if (this.links.get(request.userId) || this.links.findByName(request.whitelistName)) continue
+      await this.links.link({
+        userId: request.userId,
+        minecraftName: request.whitelistName,
+        edition: request.edition,
+        linkedBy: request.decidedBy ?? request.userId,
+      })
+      if (guild) await this.nicknames.update(guild, request.userId)
+      linked++
+    }
+    return linked
+  }
+
+  /**
+   * Links a member to a name that is already on the whitelist, for players whitelisted before the bot did it.
+   * Returns the entry, or null when the name is not on the whitelist.
+   */
+  async linkExisting(
+    client: Client,
+    guild: Guild,
+    staff: User,
+    member: User,
+    input: string
+  ): Promise<WhitelistEntry | null> {
+    const [entry] = await this.findEntries(input)
+    if (!entry) return null
+    await this.links.link({
+      userId: member.id,
+      minecraftName: entry.name,
+      edition: PlayerName.entryEdition(entry),
+      linkedBy: staff.id,
+    })
+    await this.nicknames.update(guild, member.id)
+    await this.audit.record(client, {
+      actor: staff,
+      action: '🔗 Account linked',
+      summary: `linked ${member.tag} to ${entry.name}.`,
+      fields: [
+        { name: 'Player', value: `<@${member.id}>`, inline: true },
+        { name: 'Minecraft name', value: `\`${entry.name}\``, inline: true },
+      ],
+      color: 'Aqua',
+    })
+    return entry
   }
 
   reject(client: Client, request: WhitelistRequest, staff: User, reason: string | null): Promise<DecisionResult> {
@@ -145,6 +217,8 @@ export class WhitelistService {
       this.logger.error(`Could not remove ${entry.name}.`, error)
       return { kind: 'failed', entry, reason: 'error', message: error instanceof Error ? error.message : String(error) }
     }
+    // The name no longer belongs to anyone on the server.
+    await this.links.unlinkByName(entry.name)
     await this.notifier.logRemoval(client, entry, staff)
     return { kind: 'removed', entry }
   }

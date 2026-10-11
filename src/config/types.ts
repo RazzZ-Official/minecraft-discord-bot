@@ -119,6 +119,24 @@ export interface RestrictedFeatureConfig {
   channelId: string
 }
 
+export interface AccountsConfig {
+  /** Set Discord nicknames to the linked Minecraft name, with the team tag: "[RZ] Steve". */
+  syncNicknames: boolean
+}
+
+export interface TeamsConfig {
+  enabled: boolean
+  /** Roles that create and manage teams with /teamadmin (MC Admin). */
+  adminRoleIds: string[]
+  /** Roles that can see every team's channels, to moderate them. */
+  moderatorRoleIds: string[]
+  /** New team roles are placed right above this role, so members are listed under their team. */
+  placeRolesAboveRoleId: string
+  inviteExpiryHours: number
+  /** Hours of the day (0-23) when the in-game teams are resynced with Discord. */
+  syncHours: number[]
+}
+
 export interface AuditLogConfig {
   /** Channel where every action taken through the bot is recorded. Leave blank to log to the console only. */
   channelId: string
@@ -137,5 +155,7 @@ export interface BotConfig {
   whitelist: WhitelistConfig
   serverControl: RestrictedFeatureConfig
   operatorCommands: RestrictedFeatureConfig
+  accounts: AccountsConfig
+  teams: TeamsConfig
   auditLog: AuditLogConfig
 }

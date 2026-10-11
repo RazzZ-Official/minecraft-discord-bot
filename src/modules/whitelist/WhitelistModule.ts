@@ -1,3 +1,4 @@
+import type { Client } from 'discord.js'
 import type { AppContext } from '../../core/AppContext.js'
 import { BotModule } from '../../core/BotModule.js'
 import type { SlashCommand } from '../../core/commands/SlashCommand.js'
@@ -23,6 +24,7 @@ export class WhitelistModule extends BotModule {
   private readonly commandList: SlashCommand[] = []
   private readonly buttonList: ButtonHandler[] = []
   private readonly modalList: ModalHandler[] = []
+  private service: WhitelistService | undefined
 
   constructor(private readonly context: AppContext) {
     super()
@@ -47,6 +49,15 @@ export class WhitelistModule extends BotModule {
     return this.modalList
   }
 
+  // Links players who were approved before account linking existed.
+  override async onReady(client: Client<true>): Promise<void> {
+    if (!this.service) return
+    const staffChannel = await client.channels.fetch(this.context.config.whitelist.staffChannelId).catch(() => null)
+    const guild = staffChannel && 'guild' in staffChannel ? staffChannel.guild : null
+    const linked = await this.service.backfillLinks(guild)
+    if (linked) this.context.logger.child(this.name).info(`Linked ${linked} previously approved players.`)
+  }
+
   private build(context: AppContext, panel: PanelClient): void {
     const { config } = context
     const logger = context.logger.child(this.name)
@@ -56,8 +67,12 @@ export class WhitelistModule extends BotModule {
       new WhitelistRequestRepository(),
       new WhitelistGateway(panel),
       new WhitelistNotifier(config.whitelist, views, context.audit),
+      context.links,
+      context.nicknames,
+      context.audit,
       logger
     )
+    this.service = service
     const deps = { service, views, guard }
 
     this.commandList.push(

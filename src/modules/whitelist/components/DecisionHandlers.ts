@@ -90,7 +90,7 @@ export class ApproveButton extends ButtonHandler {
     if (!request) return
     try {
       await interaction.update(this.deps.views.staffRequestMessage(request, true))
-      const result = await this.deps.service.approve(interaction.client, request, interaction.user)
+      const result = await this.deps.service.approve(interaction.client, interaction.guild, request, interaction.user)
       await this.flow.showResult(interaction, request, result)
     } finally {
       this.deps.service.endReview(request.requestId)

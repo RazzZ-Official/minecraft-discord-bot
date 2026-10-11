@@ -1,10 +1,13 @@
 // Variables in braces are filled in with fill(), eg. {username} is the player's whitelist name.
 export const WhitelistText = {
   commands: {
-    whitelist: 'Manage the Minecraft server whitelist. Staff only.',
+    whitelist: 'Manage the Minecraft server whitelist. Whitelist Managers only.',
     list: 'Shows all whitelisted players. Staff only.',
     remove: 'Removes a player from the whitelist. Staff only.',
     removeUsername: 'The whitelist entry to remove, eg: EdenZyn or .Connor_Leo2299',
+    link: 'Links a member to their whitelisted Minecraft name. Staff only.',
+    linkPlayer: 'The Discord member.',
+    linkUsername: 'Their name on the whitelist, eg: EdenZyn or .Connor_Leo2299',
     setup: 'Posts the whitelist request panel in this channel. Staff only.',
   },
   replies: {
@@ -33,6 +36,7 @@ export const WhitelistText = {
     removeAmbiguous:
       ':warning: **Several whitelist entries match `{username}` with different capitalisation. Remove it from the server console instead.**',
     removed: ':white_check_mark: **{username}** ({edition}) was removed from the whitelist by {staff}.',
+    linked: ':link: {user} is now linked to **{username}**, and their nickname was updated.',
     removeFailed: ':warning: **Could not remove {username}:** {error}',
     removeNotVerified: 'The command was sent, but {username} is still on the whitelist. Check the server console.',
   },

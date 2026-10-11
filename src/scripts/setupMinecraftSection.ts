@@ -21,7 +21,7 @@ const ROLES = {
   top: '1429366850621538344',
   fam: '1429380790139224166',
   minecraft: '1446466000043380759',
-  mcStaff: '1558722619543396463',
+  whitelistManager: '1558722619543396463',
 }
 const MC_ADMIN_ROLE = { name: 'MC Admin', color: 0xe74c3c, hoist: true }
 const TEAM_ROLE_IDS = [
@@ -51,7 +51,7 @@ interface ChannelSpec {
 
 const hidden: Overwrite = { role: 'everyone', deny: P.ViewChannel }
 const staffRead: Overwrite[] = [
-  { role: 'mcStaff', allow: READ, deny: NO_CHAT },
+  { role: 'whitelistManager', allow: READ, deny: NO_CHAT },
   { role: 'mcAdmin', allow: READ, deny: NO_CHAT },
 ]
 
@@ -94,7 +94,7 @@ const CHANNELS: ChannelSpec[] = [
     type: ChannelType.GuildText,
     overwrites: [
       hidden,
-      { role: 'mcStaff', allow: READ | P.SendMessages | P.UseApplicationCommands },
+      { role: 'whitelistManager', allow: READ | P.SendMessages | P.UseApplicationCommands },
       { role: 'mcAdmin', allow: READ | P.SendMessages | P.UseApplicationCommands },
     ],
   },
@@ -150,18 +150,18 @@ const main = async (): Promise<void> => {
   const channels = (await rest.get(Routes.guildChannels(GUILD_ID))) as APIGuildChannel<GuildChannelType>[]
   const byId = new Map(channels.map((channel) => [channel.id, channel]))
 
-  // MC Admin role, placed right above MC Staff.
+  // MC Admin role, placed right above Whitelist Manager.
   let mcAdmin = roles.find((role) => role.name === MC_ADMIN_ROLE.name)
   if (!mcAdmin) {
     mcAdmin = (await change(`Create role "${MC_ADMIN_ROLE.name}"`, () =>
       rest.post(Routes.guildRoles(GUILD_ID), { body: { ...MC_ADMIN_ROLE, permissions: '0', mentionable: false } })
     )) as APIRole | undefined
   }
-  const mcStaff = roles.find((role) => role.id === ROLES.mcStaff)
-  if (mcStaff && mcAdmin && mcAdmin.position <= mcStaff.position) {
+  const whitelistManager = roles.find((role) => role.id === ROLES.whitelistManager)
+  if (whitelistManager && mcAdmin && mcAdmin.position <= whitelistManager.position) {
     const adminId = mcAdmin.id
-    await change(`Move "${MC_ADMIN_ROLE.name}" above "${mcStaff.name}"`, () =>
-      rest.patch(Routes.guildRoles(GUILD_ID), { body: [{ id: adminId, position: mcStaff.position + 1 }] })
+    await change(`Move "${MC_ADMIN_ROLE.name}" above "${whitelistManager.name}"`, () =>
+      rest.patch(Routes.guildRoles(GUILD_ID), { body: [{ id: adminId, position: whitelistManager.position + 1 }] })
     )
   }
   const roleIds: Record<Overwrite['role'], string> = { ...ROLES, mcAdmin: mcAdmin?.id ?? '<new MC Admin role>' }

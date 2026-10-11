@@ -10,6 +10,9 @@ export const DATA_DIR = path.resolve('datas')
  * Reads and changes happen synchronously in memory, so a check followed by a change (eg. "no pending request yet,
  * so add one") cannot be interleaved with another change. Saving runs in the background, one write at a time,
  * through a temporary file that replaces the old one, so a crash never leaves a half-written file.
+ *
+ * The file is read once at startup. Edit files in datas/ only while the bot is stopped, or the bot's next save
+ * overwrites the edit.
  */
 export class JsonStore<T extends object> {
   private static readonly instances = new Set<JsonStore<object>>()

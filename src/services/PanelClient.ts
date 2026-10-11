@@ -1,6 +1,9 @@
 import type { Env } from '../config/env.js'
 
 const REQUEST_TIMEOUT_MS = 10_000
+// The panel rate-limits API requests. Rate-limited requests are retried after the wait it asks for.
+const RATE_LIMIT_RETRIES = 3
+const RATE_LIMIT_DEFAULT_WAIT_MS = 5_000
 
 export class PanelError extends Error {
   constructor(
@@ -42,10 +45,15 @@ interface ResourcesResponse {
 
 /**
  * Client for the hosting panel's client API (Reviactyl, a Pterodactyl fork). Only routes verified against the panel
- * are used: server resources, power actions, reading files and sending console commands.
+ * are used: server resources, power actions, reading files, console commands and the live console connection.
  */
 export class PanelClient {
   private constructor(private readonly credentials: PanelCredentials) {}
+
+  /** The panel's address, sent as the Origin of console connections. */
+  get origin(): string {
+    return this.credentials.url
+  }
 
   /** Returns null when the panel is not configured in .env. */
   static fromEnv(env: Env): PanelClient | null {
@@ -77,6 +85,12 @@ export class PanelClient {
     await this.request('/power', { method: 'POST', body: { signal: action } })
   }
 
+  /** A short-lived URL and token for the live console connection (see PanelConsole). */
+  async getConsoleCredentials(): Promise<{ socket: string; token: string }> {
+    const { data } = (await (await this.request('/websocket')).json()) as { data: { socket: string; token: string } }
+    return data
+  }
+
   async readFile(path: string): Promise<string> {
     return (await this.request(`/files/contents?file=${encodeURIComponent(path)}`)).text()
   }
@@ -90,13 +104,27 @@ export class PanelClient {
   }
 
   private async request(path: string, options: { method?: string; body?: unknown } = {}): Promise<Response> {
+    for (let attempt = 0; ; attempt++) {
+      const response = await this.send(path, options)
+      if (response.status !== 429 || attempt >= RATE_LIMIT_RETRIES) return this.check(response)
+      const retryAfter = Number(response.headers.get('retry-after'))
+      await new Promise((resolve) =>
+        setTimeout(resolve, retryAfter > 0 ? retryAfter * 1000 : RATE_LIMIT_DEFAULT_WAIT_MS)
+      )
+    }
+  }
+
+  private send(path: string, options: { method?: string; body?: unknown }): Promise<Response> {
     const { url, serverId, apiKey } = this.credentials
-    const response = await fetch(`${url}/api/client/servers/${encodeURIComponent(serverId)}${path}`, {
+    return fetch(`${url}/api/client/servers/${encodeURIComponent(serverId)}${path}`, {
       method: options.method ?? 'GET',
       headers: { Authorization: `Bearer ${apiKey}`, Accept: 'application/json', 'Content-Type': 'application/json' },
       body: options.body === undefined ? null : JSON.stringify(options.body),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     })
+  }
+
+  private async check(response: Response): Promise<Response> {
     if (!response.ok) {
       const detail = await response
         .json()

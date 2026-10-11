@@ -4,12 +4,9 @@ import type { Logger } from '../../core/Logger.js'
 import type { StatusCardService } from './StatusCardService.js'
 import type { StatusMessage, StatusMessageRepository } from './StatusMessageRepository.js'
 
-// Errors meaning the status message is gone for good, so it is forgotten instead of retried.
-const GONE_ERROR_CODES: readonly number[] = [
-  RESTJSONErrorCodes.UnknownMessage,
-  RESTJSONErrorCodes.UnknownChannel,
-  RESTJSONErrorCodes.MissingAccess,
-]
+// Errors meaning the status message is gone for good, so it is forgotten instead of retried. Missing access is not
+// one of them: it can be a temporary permission problem, so the message is kept and retried.
+const GONE_ERROR_CODES: readonly number[] = [RESTJSONErrorCodes.UnknownMessage, RESTJSONErrorCodes.UnknownChannel]
 
 /** Edits every saved status message with the latest status. */
 export class StatusCardUpdater {
