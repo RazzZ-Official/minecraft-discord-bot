@@ -1,6 +1,5 @@
 node_modules/
-package-lock.json
+dist/
 nodemon.json
 .env
-src/whitelist-requests.json
-src/whitelist-requests.json.tmp
+data-backup/

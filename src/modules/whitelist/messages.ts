@@ -1,0 +1,98 @@
+// Variables in braces are filled in with fill(), eg. {username} is the player's whitelist name.
+export const WhitelistText = {
+  commands: {
+    whitelist: 'Manage the Minecraft server whitelist. Staff only.',
+    list: 'Shows all whitelisted players. Staff only.',
+    remove: 'Removes a player from the whitelist. Staff only.',
+    removeUsername: 'The whitelist entry to remove, eg: EdenZyn or .Connor_Leo2299',
+    setup: 'Posts the whitelist request panel in this channel. Staff only.',
+  },
+  replies: {
+    disabled: ':no_entry: Whitelist requests are currently disabled.',
+    invalidJava: ':warning: **`{username}` is not a valid Java username. Use 3-16 letters, numbers or underscores.**',
+    invalidBedrock:
+      ':warning: **`{username}` is not a valid Bedrock gamertag. Use up to 16 letters, numbers or spaces.**',
+    alreadyWhitelisted: ':white_check_mark: **{username}** is already whitelisted. You can join the server.',
+    alreadyPending:
+      ':hourglass: You already have a pending request for **{username}**. Please wait for staff to review it.',
+    namePending: ':hourglass: A request for **{username}** is already waiting for review.',
+    submitted:
+      ':white_check_mark: Your request for **{username}** ({edition}) was sent to staff. You will get a DM once it is reviewed.',
+    panelPosted: ':white_check_mark: The whitelist request panel was posted in {channel}.',
+    notStaff: ':no_entry: Only staff can do this.',
+    notFound: ':warning: This whitelist request no longer exists.',
+    alreadyHandled: ':information_source: This request was already reviewed: {status}.',
+    inProgress: ':hourglass: Another staff member is already handling this request.',
+    approveFailed: ':warning: **Could not whitelist {username}:** {error}',
+    notVerified:
+      'The command was sent, but {username} did not appear in the whitelist. Check the name or the server console.',
+    dmFailed: ':warning: {user} could not be notified because their DMs are closed.',
+    listEmpty: ':information_source: The whitelist is empty.',
+    panelError: ':warning: **`Could not reach the server panel. Please try again later.`**',
+    removeNotFound: ':warning: **`{username}` is not on the whitelist.**',
+    removeAmbiguous:
+      ':warning: **Several whitelist entries match `{username}` with different capitalisation. Remove it from the server console instead.**',
+    removed: ':white_check_mark: **{username}** ({edition}) was removed from the whitelist by {staff}.',
+    removeFailed: ':warning: **Could not remove {username}:** {error}',
+    removeNotVerified: 'The command was sent, but {username} is still on the whitelist. Check the server console.',
+  },
+  embeds: {
+    requestTitle: 'Whitelist Request',
+    discordUser: 'Discord User',
+    edition: 'Edition',
+    username: 'Username',
+    whitelistName: 'Whitelist Entry',
+    status: 'Status',
+    reason: 'Reason',
+    noReason: 'No reason given.',
+    playerNotified: 'Player Notified',
+    removedBy: 'Removed By',
+    pending: ':hourglass: Pending',
+    processing: ':gear: Adding to whitelist...',
+    approved: ':white_check_mark: Approved by {staff}',
+    rejected: ':x: Rejected by {staff}',
+    approveButton: 'Approve',
+    rejectButton: 'Reject',
+    rejectModalTitle: 'Reject Whitelist Request',
+    rejectReasonLabel: 'Reason (sent to the player)',
+    dmApprovedTitle: 'Whitelist Request Approved',
+    dmApprovedDescription: 'Your request for **{username}** on **{server}** was approved. You can join the server now!',
+    dmRejectedTitle: 'Whitelist Request Rejected',
+    dmRejectedDescription: 'Your request for **{username}** on **{server}** was rejected.',
+    logTitle: 'Whitelist Decision',
+    logRemovalTitle: 'Whitelist Removal',
+    listTitle: 'Whitelisted Players ({count})',
+    listMore: '...and {count} more',
+  },
+  panel: {
+    title: '📝 {name} Whitelist',
+    description:
+      'Want to play on **{name}**? Request access to the whitelist!\n\n**How it works**\n1. Click **Request Whitelist** below.\n2. Enter your Minecraft username and choose your edition.\n3. Staff review your request, and you get a DM with the decision.\n\n💻 **Java:** enter your Minecraft username.\n📱 **Bedrock:** enter your Xbox gamertag.',
+    footer: 'Make sure your DMs are open to receive the decision.',
+    button: 'Request Whitelist',
+  },
+  form: {
+    title: 'Whitelist Request',
+    info: 'Staff will review your request. You get a DM once it is approved or rejected.',
+    usernameLabel: 'Minecraft Username',
+    usernameDescription: 'Java: your username. Bedrock: your Xbox gamertag.',
+    usernamePlaceholder: 'eg. Steve',
+    editionLabel: 'Edition',
+    editionPlaceholder: 'Choose your edition',
+  },
+  console: {
+    requested: '{user} requested to whitelist {username} ({edition}).',
+    approved: '{staff} approved {username} ({edition}) for {user}.',
+    rejected: '{staff} rejected {username} ({edition}) for {user}.',
+    removed: '{staff} removed {username} ({edition}) from the whitelist.',
+  },
+} as const
+
+// Custom IDs. Existing messages in Discord use these, so they must not change.
+export const WhitelistIds = {
+  approve: 'whitelist:approve',
+  reject: 'whitelist:reject',
+  rejectReason: 'whitelist:reject-reason',
+  openForm: 'whitelist-panel:open',
+  submitForm: 'whitelist-panel:submit',
+} as const
